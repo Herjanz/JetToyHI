@@ -41,3 +41,8 @@ runCreatePythiaEvents
 runCreateThermalEvents
 Makefile
 
+.pythia8
+PU14/Makefile
+*
+!*.cc
+!*.hh
