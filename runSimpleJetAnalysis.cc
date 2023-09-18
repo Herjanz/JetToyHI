@@ -62,7 +62,11 @@ int main (int argc, char ** argv) {
 
   EventMixer mixer(&cmdline);  //the mixing machinery from PU14 workshop
 
-  // loop over events
+
+  vector<double> pt;
+
+  double totalP = 0;
+  //loop over events
   int iev = 0;
   unsigned int entryDiv = (nEvent > 200) ? nEvent / 200 : 1;
   while ( mixer.next_event() && iev < nEvent )
@@ -134,15 +138,31 @@ int main (int argc, char ** argv) {
     //Give variable we want to write out to treeWriter.
     //Only vectors of the types 'jetCollection', and 'double', 'int', 'PseudoJet' are supported
 
-    trw.addCollection("eventWeight",   eventWeight);
+    //trw.addCollection("eventWeight",   eventWeight);
     trw.addPartonCollection("partons",       partons);
 
-    trw.addCollection("sigJet",        jetCollectionSig);
-    trw.addCollection("sigJetSDBeta00Z01",      jetCollectionSigSDBeta00Z01);
+    //trw.addCollection("sigJet",        jetCollectionSig);
+    //trw.addCollection("sigJetSDBeta00Z01",      jetCollectionSigSDBeta00Z01);
     
+    //cout << partons.size() << endl;
+    //cout << partons[0].pt() << endl;
+    //cout << partons[1].pt() << endl; // both are the same
+    totalP += partons[0].pt();
+    pt.push_back(partons[0].pt());
+
     trw.fillTree();
 
   }//event loop
+
+  vector<double> ptFactor;
+  for (int i = 0; i < pt.size(); ++i)
+  {
+    ptFactor.push_back(pt[i]/totalP);
+  }
+  trw.addCollection("PartitionFunction", ptFactor);
+  trw.fillTree();
+
+  trw.setTreeName("Herjans boompje");
 
   Bar.Update(nEvent);
   Bar.Print();

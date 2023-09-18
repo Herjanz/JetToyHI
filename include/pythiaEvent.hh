@@ -52,8 +52,19 @@ pythiaEvent::pythiaEvent(double pthat, unsigned int tune, double rapMin, double 
   // tunes: http://home.thep.lu.se/~torbjorn/pythia82html/Tunes.html
   pythia.readString("Beams:idA = 11.");
   pythia.readString("Beams:idB = -11");
-  pythia.readString("Beams:eCM = 5020.");
-  pythia.readString("HardQCD:all = on");
+  //pythia.readString("Beams:eCM = 5020.");
+  double mZ = pythia.particleData.m0(23);
+  pythia.settings.parm("Beams:eCM", mZ);
+
+  // Allow no substructure in e+- beams: normal for corrected LEP data.
+  pythia.readString("PDF:lepton = off");
+  // Process selection.
+  pythia.readString("WeakSingleBoson:ffbar2gmZ = on");
+  // Switch off all Z0 decays and then switch back on those to quarks.
+  pythia.readString("23:onMode = off");
+  pythia.readString("23:onIfAny = 1 2 3 4 5");
+
+  //pythia.readString("HardQCD:all = on");
   pythia.readString(Form("PhaseSpace:pTHatMin = %.1f",pthat_));
   pythia.readString("Next:numberShowInfo = 0");
   pythia.readString("Next:numberShowProcess = 0");
