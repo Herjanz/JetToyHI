@@ -1,5 +1,6 @@
 #include <iostream>
 #include <chrono>
+#include <string>
 
 #include "TFile.h"
 #include "TTree.h"
@@ -19,6 +20,8 @@
 #include "include/treeWriter.hh"
 #include "include/jetMatcher.hh"
 #include "include/Angularity.hh"
+
+#include "include/Fragmentation.hh"
 
 using namespace std;
 using namespace fastjet;
@@ -56,16 +59,14 @@ int main (int argc, char ** argv) {
 
   Angularity width(1.,1.,R);
   Angularity pTD(0.,2.,R);
+
+  Fragmentation PtZ;
     
   ProgressBar Bar(cout, nEvent);
   Bar.SetStyle(-1);
 
   EventMixer mixer(&cmdline);  //the mixing machinery from PU14 workshop
 
-
-  vector<double> pt;
-
-  double totalP = 0;
   //loop over events
   int iev = 0;
   unsigned int entryDiv = (nEvent > 200) ? nEvent / 200 : 1;
@@ -109,26 +110,37 @@ int main (int argc, char ** argv) {
     fastjet::ClusterSequenceArea csSig(particlesSig, jet_def, area_def);
     jetCollection jetCollectionSig(sorted_by_pt(jet_selector(csSig.inclusive_jets(10.))));
 
-    //calculate some angularities
+    //calculate some angularities & fragmentations
     vector<double> widthSig; widthSig.reserve(jetCollectionSig.getJet().size());
     vector<double> pTDSig;   pTDSig.reserve(jetCollectionSig.getJet().size());
+
+    vector<double> PtZSig; PtZSig.reserve(jetCollectionSig.getJet().size());
+    int i = 1;
     for(PseudoJet jet : jetCollectionSig.getJet()) {
       widthSig.push_back(width.result(jet));
       pTDSig.push_back(pTD.result(jet));
+
+      if (!jet.has_constituents())
+        continue;
+      vector<double> FF = PtZ.getFF(jet);
+      //jetCollectionSig.addVector("FF" + to_string(iev) + "jet" + to_string(i++), FF);
+      trw.addCollection("FF" + to_string(iev) + "jet" + to_string(i++), FF);
     }
     jetCollectionSig.addVector("widthSig", widthSig);
     jetCollectionSig.addVector("pTDSig", pTDSig);
+
+    
     
     //---------------------------------------------------------------------------
     //   Groom the jets
     //---------------------------------------------------------------------------
 
     //SoftDrop grooming classic for signal jets (zcut=0.1, beta=0)
-    softDropGroomer sdgSigBeta00Z01(0.1, 0.0, R);
-    jetCollection jetCollectionSigSDBeta00Z01(sdgSigBeta00Z01.doGrooming(jetCollectionSig));
-    jetCollectionSigSDBeta00Z01.addVector("zgSigSDBeta00Z01",    sdgSigBeta00Z01.getZgs());
-    jetCollectionSigSDBeta00Z01.addVector("ndropSigSDBeta00Z01", sdgSigBeta00Z01.getNDroppedSubjets());
-    jetCollectionSigSDBeta00Z01.addVector("dr12SigSDBeta00Z01",  sdgSigBeta00Z01.getDR12());
+    // softDropGroomer sdgSigBeta00Z01(0.1, 0.0, R);
+    // jetCollection jetCollectionSigSDBeta00Z01(sdgSigBeta00Z01.doGrooming(jetCollectionSig));
+    // jetCollectionSigSDBeta00Z01.addVector("zgSigSDBeta00Z01",    sdgSigBeta00Z01.getZgs());
+    // jetCollectionSigSDBeta00Z01.addVector("ndropSigSDBeta00Z01", sdgSigBeta00Z01.getNDroppedSubjets());
+    // jetCollectionSigSDBeta00Z01.addVector("dr12SigSDBeta00Z01",  sdgSigBeta00Z01.getDR12());
   
 
     //---------------------------------------------------------------------------
@@ -139,30 +151,20 @@ int main (int argc, char ** argv) {
     //Only vectors of the types 'jetCollection', and 'double', 'int', 'PseudoJet' are supported
 
     //trw.addCollection("eventWeight",   eventWeight);
-    trw.addPartonCollection("partons",       partons);
+    //trw.addPartonCollection("partons",       partons);
 
-    //trw.addCollection("sigJet",        jetCollectionSig);
+    trw.addCollection("sigJet",        jetCollectionSig, true);
     //trw.addCollection("sigJetSDBeta00Z01",      jetCollectionSigSDBeta00Z01);
     
     //cout << partons.size() << endl;
     //cout << partons[0].pt() << endl;
     //cout << partons[1].pt() << endl; // both are the same
-    totalP += partons[0].pt();
-    pt.push_back(partons[0].pt());
 
+    //cout << jetCollectionSig.getVectorDouble("FF1jet" + to_string(iev)) << endl;
     trw.fillTree();
-
   }//event loop
 
-  vector<double> ptFactor;
-  for (int i = 0; i < pt.size(); ++i)
-  {
-    ptFactor.push_back(pt[i]/totalP);
-  }
-  trw.addCollection("PartitionFunction", ptFactor);
-  trw.fillTree();
-
-  trw.setTreeName("Herjans boompje");
+  trw.setTreeName("HerjansBoompje");
 
   Bar.Update(nEvent);
   Bar.Print();

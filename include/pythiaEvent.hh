@@ -59,7 +59,7 @@ pythiaEvent::pythiaEvent(double pthat, unsigned int tune, double rapMin, double 
   // Allow no substructure in e+- beams: normal for corrected LEP data.
   pythia.readString("PDF:lepton = off");
   // Process selection.
-  pythia.readString("WeakSingleBoson:ffbar2gmZ = on");
+  pythia.readString("WeakSingleBoson:all = on");
   // Switch off all Z0 decays and then switch back on those to quarks.
   pythia.readString("23:onMode = off");
   pythia.readString("23:onIfAny = 1 2 3 4 5");
