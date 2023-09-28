@@ -114,8 +114,9 @@ int main (int argc, char ** argv) {
     vector<double> widthSig; widthSig.reserve(jetCollectionSig.getJet().size());
     vector<double> pTDSig;   pTDSig.reserve(jetCollectionSig.getJet().size());
 
-    vector<double> PtZSig; PtZSig.reserve(jetCollectionSig.getJet().size());
-    int i = 1;
+    vector<double> dr; dr.reserve(jetCollectionSig.getJet().size());
+    vector<int> partonTypeCounter; partonTypeCounter.reserve(jetCollectionSig.getJet().size());
+    // int i = 1; // for individual fragmentation functions
     for(PseudoJet jet : jetCollectionSig.getJet()) {
       widthSig.push_back(width.result(jet));
       pTDSig.push_back(pTD.result(jet));
@@ -123,11 +124,45 @@ int main (int argc, char ** argv) {
       if (!jet.has_constituents())
         continue;
       vector<double> FF = PtZ.getFF(jet);
+      
+      
+      // individual fragmentation function for this jet
       //jetCollectionSig.addVector("FF" + to_string(iev) + "jet" + to_string(i++), FF);
-      trw.addCollection("FF" + to_string(iev) + "jet" + to_string(i++), FF);
+      //trw.addCollection("FF" + to_string(iev) + "jet" + to_string(i++), FF);
+
+      trw.addCollection("FF", FF); // avg in physics
+
+      // get distance, to find to which parton jet belongs
+      PseudoJet closestParton;
+      double shortestDr = 999;
+      for (PseudoJet parton : partons)
+      {
+        double dphi = parton.phi() - jet.phi();
+        if(dphi > pi)
+          dphi -= 2*pi;
+        if(dphi < -pi)
+          dphi += 2*pi;
+        double deta = parton.eta() - jet.eta();
+        double dr = sqrt(dphi*dphi + deta*deta);
+        if(dr < shortestDr)
+        {
+          shortestDr = dr;
+          closestParton = parton;
+        }
+      }
+
+      dr.push_back(shortestDr);
+      if(shortestDr < 0.3)
+      {
+        const int &pdgid = closestParton.user_info<PU14>().pdg_id();
+        partonTypeCounter.push_back(pdgid);
+      }
     }
     jetCollectionSig.addVector("widthSig", widthSig);
     jetCollectionSig.addVector("pTDSig", pTDSig);
+
+    trw.addCollection("dr", dr);
+    trw.addIntCollection("partonTypeCounter", partonTypeCounter);
 
     
     
@@ -151,7 +186,7 @@ int main (int argc, char ** argv) {
     //Only vectors of the types 'jetCollection', and 'double', 'int', 'PseudoJet' are supported
 
     //trw.addCollection("eventWeight",   eventWeight);
-    //trw.addPartonCollection("partons",       partons);
+    trw.addPartonCollection("partons",       partons);
 
     trw.addCollection("sigJet",        jetCollectionSig, true);
     //trw.addCollection("sigJetSDBeta00Z01",      jetCollectionSigSDBeta00Z01);

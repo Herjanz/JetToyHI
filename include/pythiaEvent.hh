@@ -62,7 +62,7 @@ pythiaEvent::pythiaEvent(double pthat, unsigned int tune, double rapMin, double 
   pythia.readString("WeakSingleBoson:all = on");
   // Switch off all Z0 decays and then switch back on those to quarks.
   pythia.readString("23:onMode = off");
-  pythia.readString("23:onIfAny = 1 2 3 4 5");
+  pythia.readString("23:onIfAny = 1 2 3 4 5 6 21");
 
   //pythia.readString("HardQCD:all = on");
   pythia.readString(Form("PhaseSpace:pTHatMin = %.1f",pthat_));
@@ -165,6 +165,7 @@ std::vector<fastjet::PseudoJet> pythiaEvent::createPythiaEvent() {
   }
 
   //if(iprint==1) pythia.event.list();
+  //pythia.event.list();
   
   return particles;
 }
