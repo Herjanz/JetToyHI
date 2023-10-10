@@ -28,6 +28,17 @@ using namespace fastjet;
 
 // ./runSimpleJetAnalysis -hard /Users/mverweij/mnt/eos/project/j/jetquenching/JetWorkshop2017/samples/pythia8/dijet120/PythiaEventsTune14PtHat120_0.pu14 -nev 10
 
+double getDr(PseudoJet a, PseudoJet b)
+{
+  double dphi = a.phi() - b.phi();
+  if(dphi > pi)
+    dphi -= 2*pi;
+  if(dphi < -pi)
+    dphi += 2*pi;
+  double deta = a.eta() - b.eta();
+  return sqrt(dphi*dphi + deta*deta);
+}
+
 int main (int argc, char ** argv) {
 
   auto start_time = chrono::steady_clock::now();
@@ -87,6 +98,7 @@ int main (int argc, char ** argv) {
     // extract hard partons that initiated the jets
     fastjet::Selector parton_selector = SelectorVertexNumber(-1);
     vector<PseudoJet> partons = parton_selector(particlesMergedAll);
+    //cout << partons.size() << endl;
 
     // select final state particles from hard event only
     fastjet::Selector sig_selector = SelectorVertexNumber(0);
@@ -113,59 +125,128 @@ int main (int argc, char ** argv) {
     //calculate some angularities & fragmentations
     vector<double> widthSig; widthSig.reserve(jetCollectionSig.getJet().size());
     vector<double> pTDSig;   pTDSig.reserve(jetCollectionSig.getJet().size());
-
-    vector<double> dr; dr.reserve(jetCollectionSig.getJet().size());
-    vector<int> partonTypeCounter; partonTypeCounter.reserve(jetCollectionSig.getJet().size());
-    // int i = 1; // for individual fragmentation functions
     for(PseudoJet jet : jetCollectionSig.getJet()) {
       widthSig.push_back(width.result(jet));
       pTDSig.push_back(pTD.result(jet));
-
-      if (!jet.has_constituents())
-        continue;
-      vector<double> FF = PtZ.getFF(jet);
-      
-      
-      // individual fragmentation function for this jet
-      //jetCollectionSig.addVector("FF" + to_string(iev) + "jet" + to_string(i++), FF);
-      //trw.addCollection("FF" + to_string(iev) + "jet" + to_string(i++), FF);
-
-      trw.addCollection("FF", FF); // avg in physics
-
-      // get distance, to find to which parton jet belongs
-      PseudoJet closestParton;
-      double shortestDr = 999;
-      for (PseudoJet parton : partons)
-      {
-        double dphi = parton.phi() - jet.phi();
-        if(dphi > pi)
-          dphi -= 2*pi;
-        if(dphi < -pi)
-          dphi += 2*pi;
-        double deta = parton.eta() - jet.eta();
-        double dr = sqrt(dphi*dphi + deta*deta);
-        if(dr < shortestDr)
-        {
-          shortestDr = dr;
-          closestParton = parton;
-        }
-      }
-
-      dr.push_back(shortestDr);
-      if(shortestDr < 0.3)
-      {
-        const int &pdgid = closestParton.user_info<PU14>().pdg_id();
-        partonTypeCounter.push_back(pdgid);
-      }
     }
     jetCollectionSig.addVector("widthSig", widthSig);
     jetCollectionSig.addVector("pTDSig", pTDSig);
 
-    trw.addCollection("dr", dr);
-    trw.addIntCollection("partonTypeCounter", partonTypeCounter);
 
+    // ------ START Herjans code ------ \\
+
+    // --- Find splitted particles from partons that can be viewed as originators for jets --- \\
     
+    // originators are particles after first split of partons that pass checks. Thus allowed to be parents for jets
+    vector<PseudoJet> originators;
+
+    // Originator to parent parton info
+    vector<double> OriginatorPartonDr;// OriginatorPartonDr.reserve(jetCollectionSig.getJet().size());
+    vector<double> OriginatorPartonPtFraction;// OriginatorPartonPtFraction.reserve(jetCollectionSig.getJet().size());
+    vector<int> OriginatorPartonPDG;// OriginatorPartonPDG.reserve(jetCollectionSig.getJet().size());
     
+    // get first splitted gluons and handle them like jet parents if they pass conditions [minimum momentum/angle]
+    // extract hard partons from first splitting
+    fastjet::Selector parton_selector_split = SelectorVertexNumber(-2);
+    vector<PseudoJet> firstSplittedParticles = parton_selector_split(particlesMergedAll);
+    for(PseudoJet jet : firstSplittedParticles) {
+      // get distance, to find to which parton jet belongs
+      PseudoJet closestParton;
+      double shortestDr = 9;
+      double PtFraction = 0;
+      for (PseudoJet parton : partons)
+      {
+        double dr = getDr(parton, jet);
+        double PtFrac = jet.pt() / parton.pt(); // child pt can not be higher than mother pt
+        if(dr < shortestDr && PtFrac <= 1)
+        {
+          shortestDr = dr;
+          closestParton = parton;
+          PtFraction = PtFrac;
+        }
+      }
+
+      // only attach jets to parton if they have an obvious parent, if dr is too big, its uncertain
+      if(shortestDr < pi && PtFraction > 0.1)
+      {
+        // checks passed, add splitted particle as possible parent for jets
+        originators.push_back(jet);
+      }
+
+      // add originator to parton info
+      OriginatorPartonDr.push_back(shortestDr);
+      OriginatorPartonPtFraction.push_back(PtFraction);
+      OriginatorPartonPDG.push_back(jet.user_info<PU14>().pdg_id());
+    }
+
+    // originator to parton info
+    trw.addDoubleCollection("OriginatorPartonDr", OriginatorPartonDr);
+    trw.addDoubleCollection("OriginatorPartonPtFraction", OriginatorPartonPtFraction);
+    trw.addIntCollection("OriginatorPartonPDG", OriginatorPartonPDG);
+
+    // originator info
+    trw.addPartonCollection("originators", originators);
+
+    // --- Find origin particles for jets --- \\
+
+    // jet to originator info
+    vector<double> JetOriginatorDr;// JetOriginatorDr.reserve(jetCollectionSig.getJet().size());
+    vector<double> JetOriginatorPtFraction;
+    vector<int> jetOriginatorTypeCounter;// jetParentTypeCounter.reserve(jetCollectionSig.getJet().size());
+    // int i = 1; // for individual fragmentation functions [only for individual FF]
+
+    cout << "Originators: " << originators.size() << " Jets: " << jetCollectionSig.getJet().size() << endl;
+    
+    for(PseudoJet jet : jetCollectionSig.getJet())
+    {
+
+      if (!jet.has_constituents())
+        continue; // nothing to do with an empty jet
+
+      vector<double> FF = PtZ.getFF(jet);
+      
+      // individual fragmentation function for this jet [disabled]
+      //trw.addCollection("FF" + to_string(iev) + "jet" + to_string(i++), FF);
+
+      trw.addDoubleCollection("FF", FF); // avg in physics
+
+      // get distance, to find to which parton jet belongs
+      PseudoJet closestOriginator;
+      double shortestDr = 999;
+      double PtFraction = 0;
+      for (PseudoJet originator : originators)
+      {
+        double dr = getDr(originator, jet);
+        double PtFrac = jet.pt() / originator.pt(); // child pt can not be higher than mother pt
+
+        if(dr < shortestDr && PtFrac <= 1)
+        {
+          shortestDr = dr;
+          closestOriginator = originator;
+          PtFraction = PtFrac;
+        }
+      }
+
+      JetOriginatorDr.push_back(shortestDr);
+      JetOriginatorPtFraction.push_back(PtFraction);
+
+      // only attach jets to parton if they have an obvious parent, if dr is too big, its uncertain
+      if(shortestDr < 3)
+      {
+        const int &pdgid = closestOriginator.user_info<PU14>().pdg_id();
+        jetOriginatorTypeCounter.push_back(pdgid);
+      }
+
+    }
+    
+    // jet to originator info
+    trw.addCollection("JetOriginatorDr", JetOriginatorDr);
+    trw.addCollection("JetOriginatorPtFraction", JetOriginatorPtFraction);
+    trw.addIntCollection("jetOriginatorTypeCounter", jetOriginatorTypeCounter);
+
+    // ------ END Herjans code ------ \\
+    
+
     //---------------------------------------------------------------------------
     //   Groom the jets
     //---------------------------------------------------------------------------
