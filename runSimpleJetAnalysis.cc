@@ -137,7 +137,7 @@ int main (int argc, char ** argv) {
     // extract hard partons from first splitting
     fastjet::Selector parton_selector_split = SelectorVertexNumber(-2);
     vector<PseudoJet> daughterPartons = parton_selector_split(particlesMergedAll);
-    vector<PtoPInfo> DPtoDPmatches = PtoP.findMatches(daughterPartons, daughterPartons);
+    vector<PtoPInfo> DPtoDPmatches = PtoP.findMatches(daughterPartons, daughterPartons, false);
     // daughter parton to daughter parton graphs
     trw.addDoubleCollection("DParton2DPartonDr", getDrVector(DPtoDPmatches));
     trw.addDoubleCollection("DParton2DPartonPtFraction", getPtFracVector(DPtoDPmatches));
@@ -146,7 +146,7 @@ int main (int argc, char ** argv) {
     for(int i = DPtoDPmatches.size()-1; i >= 0; i--)
     {
       PtoPInfo match = DPtoDPmatches[i];
-      if(match.dr < 0.2)
+      if(match.dr < 0.4)
       {
         DPtoDPmatches.erase(DPtoDPmatches.begin() + i);
       }
@@ -164,7 +164,7 @@ int main (int argc, char ** argv) {
 
 
     // Daughter Parton to Parton
-    vector<PtoPInfo> DPtoPmatches = PtoP.findMatches(partons, validDaughterPartons);
+    vector<PtoPInfo> DPtoPmatches = PtoP.findMatches(partons, validDaughterPartons, true);
     // daughter parton to daughter parton graphs
     trw.addDoubleCollection("DParton2PartonDr", getDrVector(DPtoPmatches));
     trw.addDoubleCollection("DParton2PartonPtFraction", getPtFracVector(DPtoPmatches));
@@ -173,7 +173,7 @@ int main (int argc, char ** argv) {
     for(int i = DPtoPmatches.size()-1; i >= 0; i--)
     {
       PtoPInfo match = DPtoPmatches[i];
-      if(match.ptFraction >= 1 || match.dr < 0)
+      if(match.ptFraction < 0.3)
       {
         DPtoPmatches.erase(DPtoPmatches.begin() + i);
       }
@@ -198,15 +198,23 @@ int main (int argc, char ** argv) {
 
     jetParents.insert(jetParents.end(), partonsWithoutValidDaughters.begin(), partonsWithoutValidDaughters.end());
     jetParents.insert(jetParents.end(), validDaughterPartons.begin(), validDaughterPartons.end());
-    cout << "validPartons: " << partonsWithoutValidDaughters.size() << " validDPs" << validDaughterPartons.size() << " jetParents: " << jetParents.size() << endl;
+    cout << "validPartons: " << partonsWithoutValidDaughters.size() << " validDPs: " << validDaughterPartons.size() << " jetParents: " << jetParents.size() << endl;
 
 
     // Jet to Jet parents
-    vector<PtoPInfo> JtoJPmatches = PtoP.findMatches(jetParents, jetCollectionSig.getJet());
+    vector<PtoPInfo> JtoJPmatches = PtoP.findMatches(jetParents, jetCollectionSig.getJet(), true);
     // jet to jetParent graphs
     trw.addDoubleCollection("Jet2JetPDr", getDrVector(JtoJPmatches));
     trw.addDoubleCollection("Jet2JetPPtFraction", getPtFracVector(JtoJPmatches));
-
+    
+    for(int i = JtoJPmatches.size()-1; i >= 0; i--)
+    {
+      PtoPInfo match = JtoJPmatches[i];
+      if(match.dr == -1)
+      {
+        cout << "No match for jet" << endl;
+      }
+    }
     // // erase DP to P matches if they are not good
     // for(int i = DPtoPmatches.size()-1; i >= 0; i--)
     // {

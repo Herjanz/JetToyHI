@@ -38,7 +38,7 @@ public:
   ParticleToParticle(){}
 
   /// compute the function
-  virtual vector<PtoPInfo> findMatches(vector<fastjet::PseudoJet> incoming, vector<fastjet::PseudoJet> outgoing) const {
+  virtual vector<PtoPInfo> findMatches(vector<fastjet::PseudoJet> incoming, vector<fastjet::PseudoJet> outgoing, bool childParent = false) const {
     vector<PtoPInfo> matches;
 
     for(PseudoJet outP : outgoing)
@@ -51,10 +51,15 @@ public:
         if(outP == inP)
           continue;
 
+
+        if(childParent && outP.pt() / inP.pt() > 1)
+          continue;
+          
         // temporary
         double dr = inP.delta_R(outP);
-        if( (info.dr == -1 || dr < info.dr)/* && PtFrac <= 1*/)
+        if(info.dr == -1 || dr < info.dr)
         {
+
           info.dr = dr;
           info.ptFraction = outP.pt() / inP.pt();
           info.in = inP;
