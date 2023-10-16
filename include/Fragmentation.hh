@@ -8,17 +8,7 @@
 class Fragmentation {
 public:
   /// default ctor
-  Fragmentation(double beta=1.0, double kappa = 1., double R0 = 0.4) :
-    _beta(beta),
-    _kappa(kappa),
-    _R0(R0)
-  {}
-
-  virtual vector<double> test(const fastjet::PseudoJet &jet) const {
-    vector<double> v;
-    v.push_back(3.);
-    return v;
-  }
+  Fragmentation(){}
 
   /// compute the function
   virtual vector<double> getFF(const fastjet::PseudoJet &jet) const {
@@ -35,11 +25,6 @@ public:
     }
     return PtZ;
   }
-  
-protected:
-  double _beta;
-  double _kappa;
-  double _R0;
 };
 
 #endif
