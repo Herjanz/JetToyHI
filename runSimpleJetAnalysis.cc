@@ -138,12 +138,14 @@ int main (int argc, char ** argv) {
     fastjet::Selector parton_selector_split = SelectorVertexNumber(-2);
     vector<PseudoJet> daughterPartons = parton_selector_split(particlesMergedAll);
 
+    trw.addPartonCollection("daughterPartons", daughterPartons);
+    
     // daughterparton[0/1] belong to parton[0] and dp[2/3] belong to p[1]
     // get dr between daughter partons
     vector<double> DPdr;
     DPdr.push_back(daughterPartons[0].delta_R(daughterPartons[1]));
     DPdr.push_back(daughterPartons[2].delta_R(daughterPartons[3]));
-    // get ptFraction between daughter partons
+    // get ptFraction between daughterPartons and partons
     vector<double> DPptFrac;
     DPptFrac.push_back(daughterPartons[0].pt()/partons[0].pt());
     DPptFrac.push_back(daughterPartons[1].pt()/partons[0].pt());
@@ -173,7 +175,7 @@ int main (int argc, char ** argv) {
     for (int i = 0; i < DPdr.size(); ++i)
     {
       jetParents.push_back(partons[i]);
-      if(DPdr[i] > 0.1)
+      if(DPdr[i] > 10.2)
       {
         jetParents.push_back(daughterPartons[i*2]);
         jetParents.push_back(daughterPartons[i*2+1]);
