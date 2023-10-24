@@ -126,7 +126,7 @@ int main (int argc, char ** argv) {
 
 
 
-    // ------ START Herjans code ------ \\
+    // ------ START Herjans code ------
 
     // --- Find splitted particles from partons that can be viewed as originators for jets --- \\
     
@@ -137,98 +137,63 @@ int main (int argc, char ** argv) {
     // extract hard partons from first splitting
     fastjet::Selector parton_selector_split = SelectorVertexNumber(-2);
     vector<PseudoJet> daughterPartons = parton_selector_split(particlesMergedAll);
-    vector<PtoPInfo> DPtoDPmatches = PtoP.findMatches(daughterPartons, daughterPartons, false);
-    // daughter parton to daughter parton graphs
-    trw.addDoubleCollection("DParton2DPartonDr", getDrVector(DPtoDPmatches));
-    trw.addDoubleCollection("DParton2DPartonPtFraction", getPtFracVector(DPtoDPmatches));
 
-    // erase DP to DP matches if they are not good
-    for(int i = DPtoDPmatches.size()-1; i >= 0; i--)
-    {
-      PtoPInfo match = DPtoDPmatches[i];
-      if(match.dr < 0.4)
-      {
-        DPtoDPmatches.erase(DPtoDPmatches.begin() + i);
-      }
-    }
-
-    trw.addDoubleCollection("ValidDParton2DPartonDr", getDrVector(DPtoDPmatches));
-    trw.addDoubleCollection("ValidDParton2DPartonPtFraction", getPtFracVector(DPtoDPmatches));
-
-    vector<PseudoJet> validDaughterPartons;
-    for(int i = DPtoDPmatches.size()-1; i >= 0; i--)
-    {
-      PtoPInfo match = DPtoDPmatches[i];
-      validDaughterPartons.push_back(match.out);
-    }
-
-
-    // Daughter Parton to Parton
-    vector<PtoPInfo> DPtoPmatches = PtoP.findMatches(partons, validDaughterPartons, true);
-    // daughter parton to daughter parton graphs
-    trw.addDoubleCollection("DParton2PartonDr", getDrVector(DPtoPmatches));
-    trw.addDoubleCollection("DParton2PartonPtFraction", getPtFracVector(DPtoPmatches));
-
-    // erase DP to P matches if they are not good
-    for(int i = DPtoPmatches.size()-1; i >= 0; i--)
-    {
-      PtoPInfo match = DPtoPmatches[i];
-      if(match.ptFraction < 0.3)
-      {
-        DPtoPmatches.erase(DPtoPmatches.begin() + i);
-      }
-    }
-    trw.addDoubleCollection("ValidDParton2PartonDr", getDrVector(DPtoPmatches));
-    trw.addDoubleCollection("ValidDParton2PartonPtFraction", getPtFracVector(DPtoPmatches));
-
-    vector<PseudoJet> partonsWithoutValidDaughters = partons;
+    // daughterparton[0/1] belong to parton[0] and dp[2/3] belong to p[1]
+    // get dr between daughter partons
+    vector<double> DPdr;
+    DPdr.push_back(daughterPartons[0].delta_R(daughterPartons[1]));
+    DPdr.push_back(daughterPartons[2].delta_R(daughterPartons[3]));
+    // get ptFraction between daughter partons
+    vector<double> DPptFrac;
+    DPptFrac.push_back(daughterPartons[0].pt()/partons[0].pt());
+    DPptFrac.push_back(daughterPartons[1].pt()/partons[0].pt());
+    DPptFrac.push_back(daughterPartons[2].pt()/partons[1].pt());
+    DPptFrac.push_back(daughterPartons[3].pt()/partons[1].pt());
     
-    for(int j = partonsWithoutValidDaughters.size()-1; j >= 0; j--)
+    // daughter parton to daughter parton graphs
+    trw.addDoubleCollection("DP2DP_Dr", DPdr);
+    trw.addDoubleCollection("DP2P_PtFraction", DPptFrac);
+
+    vector<PseudoJet> minPtFracDPs; // DaughterPartons that min(Pt_d1, Pt_d2)
+    if(DPptFrac[0] < DPptFrac[1])
+      minPtFracDPs.push_back(daughterPartons[0]);
+    else
+      minPtFracDPs.push_back(daughterPartons[1]);
+    if(DPptFrac[2] < DPptFrac[3])
+      minPtFracDPs.push_back(daughterPartons[2]);
+    else
+      minPtFracDPs.push_back(daughterPartons[3]);
+    
+    trw.addPartonCollection("minPtFracDPs", minPtFracDPs);
+
+    // ----- select jetParents -----
+
+    // if dr between DPs is very small, ignore them because they belong to one jet
+    int validDPs = 0;
+    for (int i = 0; i < DPdr.size(); ++i)
     {
-      for(int i = DPtoPmatches.size()-1; i >= 0; i--)
+      jetParents.push_back(partons[i]);
+      if(DPdr[i] > 0.1)
       {
-        PtoPInfo match = DPtoPmatches[i];
-        if(partonsWithoutValidDaughters[j] == match.in)
-        {
-          partonsWithoutValidDaughters.erase(partonsWithoutValidDaughters.begin() + j);
-          break;
-        }
+        jetParents.push_back(daughterPartons[i*2]);
+        jetParents.push_back(daughterPartons[i*2+1]);
+        validDPs += 2;
       }
     }
 
-    jetParents.insert(jetParents.end(), partonsWithoutValidDaughters.begin(), partonsWithoutValidDaughters.end());
-    jetParents.insert(jetParents.end(), validDaughterPartons.begin(), validDaughterPartons.end());
-    cout << "validPartons: " << partonsWithoutValidDaughters.size() << " validDPs: " << validDaughterPartons.size() << " jetParents: " << jetParents.size() << endl;
+    // ----- END select jetParents -----
 
+    cout << "validPartons: " << partons.size() << " validDPs: " << validDPs << " jetParents: " << jetParents.size() << endl;
 
     // Jet to Jet parents
-    vector<PtoPInfo> JtoJPmatches = PtoP.findMatches(jetParents, jetCollectionSig.getJet(), true);
+    vector<PtoPInfo> JtoJPmatches = PtoP.findMatches(jetParents, jetCollectionSig.getJet(), false);
     // jet to jetParent graphs
-    trw.addDoubleCollection("Jet2JetPDr", getDrVector(JtoJPmatches));
-    trw.addDoubleCollection("Jet2JetPPtFraction", getPtFracVector(JtoJPmatches));
+    trw.addDoubleCollection("jet2Parent_Dr", getDrVector(JtoJPmatches));
+    trw.addDoubleCollection("jet2Parent_PtFraction", getPtFracVector(JtoJPmatches));
     
-    for(int i = JtoJPmatches.size()-1; i >= 0; i--)
-    {
-      PtoPInfo match = JtoJPmatches[i];
-      if(match.dr == -1)
-      {
-        cout << "No match for jet" << endl;
-      }
-    }
-    // // erase DP to P matches if they are not good
-    // for(int i = DPtoPmatches.size()-1; i >= 0; i--)
-    // {
-    //   PtoPInfo match = DPtoPmatches[i];
-    //   if(match.dr > 1 || match.ptFraction >= 1 || match.dr < 0)
-    //   {
-    //     DPtoPmatches.erase(DPtoPmatches.begin() + i);
-    //   }
-    // }
-    // trw.addDoubleCollection("ValidDParton2PartonDr", getDrVector(DPtoPmatches));
-    // trw.addDoubleCollection("ValidDParton2PartonPtFraction", getPtFracVector(DPtoPmatches));
+    trw.addPartonCollection("jetParents", jetParents);
 
-
-    // ------ END Herjans code ------ \\
+    // ------ END Herjans code ------
     
 
     //---------------------------------------------------------------------------

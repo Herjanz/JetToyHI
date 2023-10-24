@@ -47,6 +47,3 @@ PU14/Makefile
 !*.cc
 !*.hh
 !*.sh
-!include/*.cc
-!include/Fragmentation.hh
-!include/*.sh
