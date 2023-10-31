@@ -142,26 +142,33 @@ int main (int argc, char ** argv) {
     
     // daughterparton[0/1] belong to parton[0] and dp[2/3] belong to p[1]
     // get dr between daughter partons
-    vector<double> DPdr;
-    DPdr.push_back(daughterPartons[0].delta_R(daughterPartons[1]));
-    DPdr.push_back(daughterPartons[2].delta_R(daughterPartons[3]));
+    vector<double> DP2DP_Dr;
+    DP2DP_Dr.push_back(daughterPartons[0].delta_R(daughterPartons[1]));
+    DP2DP_Dr.push_back(daughterPartons[2].delta_R(daughterPartons[3]));
     // get ptFraction between daughterPartons and partons
-    vector<double> DPptFrac;
-    DPptFrac.push_back(daughterPartons[0].pt()/partons[0].pt());
-    DPptFrac.push_back(daughterPartons[1].pt()/partons[0].pt());
-    DPptFrac.push_back(daughterPartons[2].pt()/partons[1].pt());
-    DPptFrac.push_back(daughterPartons[3].pt()/partons[1].pt());
+    vector<double> DP2P_PtFraction;
+    DP2P_PtFraction.push_back(daughterPartons[0].pt()/partons[0].pt());
+    DP2P_PtFraction.push_back(daughterPartons[1].pt()/partons[0].pt());
+    DP2P_PtFraction.push_back(daughterPartons[2].pt()/partons[1].pt());
+    DP2P_PtFraction.push_back(daughterPartons[3].pt()/partons[1].pt());
+
+    vector<double> DP2P_Dr;
+    DP2P_Dr.push_back(daughterPartons[0].delta_R(partons[0]));
+    DP2P_Dr.push_back(daughterPartons[1].delta_R(partons[0]));
+    DP2P_Dr.push_back(daughterPartons[2].delta_R(partons[1]));
+    DP2P_Dr.push_back(daughterPartons[3].delta_R(partons[1]));
     
     // daughter parton to daughter parton graphs
-    trw.addDoubleCollection("DP2DP_Dr", DPdr);
-    trw.addDoubleCollection("DP2P_PtFraction", DPptFrac);
+    trw.addDoubleCollection("DP2DP_Dr", DP2DP_Dr);
+    trw.addDoubleCollection("DP2P_PtFraction", DP2P_PtFraction);
+    trw.addDoubleCollection("DP2P_Dr", DP2P_Dr);
 
     vector<PseudoJet> minPtFracDPs; // DaughterPartons that min(Pt_d1, Pt_d2)
-    if(DPptFrac[0] < DPptFrac[1])
+    if(daughterPartons[0].pt() < daughterPartons[1].pt())
       minPtFracDPs.push_back(daughterPartons[0]);
     else
       minPtFracDPs.push_back(daughterPartons[1]);
-    if(DPptFrac[2] < DPptFrac[3])
+    if(daughterPartons[2].pt() < daughterPartons[3].pt())
       minPtFracDPs.push_back(daughterPartons[2]);
     else
       minPtFracDPs.push_back(daughterPartons[3]);
@@ -172,15 +179,27 @@ int main (int argc, char ** argv) {
 
     // if dr between DPs is very small, ignore them because they belong to one jet
     int validDPs = 0;
-    for (int i = 0; i < DPdr.size(); ++i)
+    for (int i = 0; i < DP2DP_Dr.size(); ++i)
     {
-      jetParents.push_back(partons[i]);
-      if(DPdr[i] > 10.2)
+      int dpsAdded = 0;
+      if(DP2DP_Dr[i] > 0.2)
       {
-        jetParents.push_back(daughterPartons[i*2]);
-        jetParents.push_back(daughterPartons[i*2+1]);
-        validDPs += 2;
+        if(DP2P_Dr[i*2] > 0.1)
+        {
+          jetParents.push_back(daughterPartons[i*2]);
+          dpsAdded++;
+        }
+        if(DP2P_Dr[i*2+1] > 0.1)
+        {
+          jetParents.push_back(daughterPartons[i*2+1]);
+          dpsAdded++;
+        }
       }
+      if(dpsAdded < 2)
+      {
+        jetParents.push_back(partons[i]);
+      }
+      validDPs += dpsAdded;
     }
 
     // ----- END select jetParents -----
@@ -190,8 +209,8 @@ int main (int argc, char ** argv) {
     // Jet to Jet parents
     vector<PtoPInfo> JtoJPmatches = PtoP.findMatches(jetParents, jetCollectionSig.getJet(), false);
     // jet to jetParent graphs
-    trw.addDoubleCollection("jet2Parent_Dr", getDrVector(JtoJPmatches));
-    trw.addDoubleCollection("jet2Parent_PtFraction", getPtFracVector(JtoJPmatches));
+    trw.addDoubleCollection("J2JP_Dr", getDrVector(JtoJPmatches));
+    trw.addDoubleCollection("J2JP_PtFraction", getPtFracVector(JtoJPmatches));
     
     trw.addPartonCollection("jetParents", jetParents);
 

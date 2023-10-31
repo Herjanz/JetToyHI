@@ -6,6 +6,8 @@
 #include <string>
 #include <algorithm>
 #include <fstream>
+#include <cstdio>
+#include <ctime>
 
 #include "Pythia8/Pythia.h"
 
@@ -162,11 +164,27 @@ std::vector<fastjet::PseudoJet> pythiaEvent::createPythiaEvent() {
       partons.push_back(pd2);
       
     }
+
+    if(i == 0)
+    {
+      // current date/time based on current system
+      time_t now = time(0);
+      // convert now to string form
+      const char* dt = ctime(&now);
+      string path = "../event_";
+      path += dt;
+      path += ".txt";
+      
+      FILE *fp = freopen(path.c_str(),"w",stdout);
+      pythia.event.list();
+      fclose(fp);
+    }
   }
 
   //if(iprint==1) pythia.event.list();
   //pythia.event.list();
-  
+
+
   return particles;
 }
 
