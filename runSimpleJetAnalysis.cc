@@ -182,14 +182,14 @@ int main (int argc, char ** argv) {
     for (int i = 0; i < DP2DP_Dr.size(); ++i)
     {
       int dpsAdded = 0;
-      if(DP2DP_Dr[i] > 0.2)
+      if(DP2DP_Dr[i] > 0.1)
       {
-        if(DP2P_Dr[i*2] > 0.1)
+        if(DP2P_Dr[i*2] > 0.1 && daughterPartons[i*2].pt() > 9)
         {
           jetParents.push_back(daughterPartons[i*2]);
           dpsAdded++;
         }
-        if(DP2P_Dr[i*2+1] > 0.1)
+        if(DP2P_Dr[i*2+1] > 0.1 && daughterPartons[i*2+1].pt() > 9)
         {
           jetParents.push_back(daughterPartons[i*2+1]);
           dpsAdded++;
@@ -204,15 +204,82 @@ int main (int argc, char ** argv) {
 
     // ----- END select jetParents -----
 
-    cout << "validPartons: " << partons.size() << " validDPs: " << validDPs << " jetParents: " << jetParents.size() << endl;
-
+    
     // Jet to Jet parents
-    vector<PtoPInfo> JtoJPmatches = PtoP.findMatches(jetParents, jetCollectionSig.getJet(), false);
+    vector<PtoPInfo> JtoJPmatches = PtoP.findMatches(jetParents, jetCollectionSig.getJet(), true);
     // jet to jetParent graphs
     trw.addDoubleCollection("J2JP_Dr", getDrVector(JtoJPmatches));
     trw.addDoubleCollection("J2JP_PtFraction", getPtFracVector(JtoJPmatches));
     
     trw.addPartonCollection("jetParents", jetParents);
+
+    // making FF for jets by parent PDG
+    vector<PseudoJet> jetsWithQuarkParents, jetsWithGluonParents, otherJets;
+    for(PtoPInfo match : JtoJPmatches)
+    {
+      int parentPDG = getPDG(match.in);
+      if(parentPDG < 7 && parentPDG > -7)
+      {
+        jetsWithQuarkParents.push_back(match.out);
+      }
+      else if(parentPDG == 21)
+      {
+        jetsWithGluonParents.push_back(match.out);
+      }
+      else
+      {
+        otherJets.push_back(match.out);
+      }
+    }
+
+    if(jetsWithQuarkParents.size() > 0)
+      trw.addJetCollection("jetsWithQuarkParents", jetsWithQuarkParents);
+    if(jetsWithGluonParents.size() > 0)
+      trw.addJetCollection("jetsWithGluonParents", jetsWithGluonParents);
+    if(otherJets.size() > 0)
+      trw.addJetCollection("otherJets", otherJets);
+
+    for(PseudoJet jet : jetsWithQuarkParents)
+      trw.addDoubleCollection("FF_quark", PtZ.getFF(jet));
+    for(PseudoJet jet : jetsWithGluonParents)
+      trw.addDoubleCollection("FF_gluon", PtZ.getFF(jet));
+    for(PseudoJet jet : otherJets)
+      trw.addDoubleCollection("FF_other", PtZ.getFF(jet));
+    // end of FF
+
+    // ---- ANALYZE ----
+    bool doPrintInfo = false;
+    // take exceptions separately to analyze them.
+    // in this case jets with very high energy compared to parent
+    for(double frac : getPtFracVector(JtoJPmatches))
+    {
+      if(frac > 2)
+      {
+        cout << "validPartons: " << partons.size() << " validDPs: " << validDPs << " jetParents: " << jetParents.size() << endl;
+
+        for(int i = 0; i < getPtFracVector(JtoJPmatches).size(); i++)
+          cout << "JtoJPfrac: " << getPtFracVector(JtoJPmatches)[i] << " JtoJPdr: " << getDrVector(JtoJPmatches)[i] << endl;
+
+        cout << "DP2DP 0 to 1: "<< DP2DP_Dr[0] << endl;
+        cout << "DP2DP 2 to 3: "<< DP2DP_Dr[1] << endl;
+
+        for(int i = 0; i < 4; i++)
+        {
+          cout << "DP2P dr: " << DP2P_Dr[i] << " frac: " << DP2P_PtFraction[i] << endl;
+        }
+        doPrintInfo = true;
+        break;
+      }
+    }
+
+
+    if(doPrintInfo)
+    {
+      for(PtoPInfo i : JtoJPmatches)
+      {
+        printInfo(i);
+      }
+    }
 
     // ------ END Herjans code ------
     

@@ -107,6 +107,101 @@ void j2jp_pt_r(TString str = "JetToyHIResultSimpleJetAnalysis.root")
 }
 
 
+
+void dp2p_r(TString str = "JetToyHIResultSimpleJetAnalysis.root")
+{
+  TTree *tr = getTree();
+
+  int nEvt = tr->GetEntriesFast();
+
+
+  auto C = new TCanvas();
+
+  // partons
+  tr->Draw("DP2P_Dr>>dp2p_r","DP2P_Dr<1");
+  TH1F *hDiv = (TH1F*)gDirectory->Get("dp2p_r");
+  hDiv->SetMarkerStyle(kFullCircle);
+  hDiv->SetMarkerColor(1);
+
+  hDiv->GetYaxis()->SetTitle("Count");
+  hDiv->GetXaxis()->SetTitle("#delta_R");
+
+  TH1 *h1 = hDiv->DrawCopy();
+}
+
+void dp2dp_r(TString str = "JetToyHIResultSimpleJetAnalysis.root")
+{
+  TTree *tr = getTree();
+
+  int nEvt = tr->GetEntriesFast();
+
+
+  auto C = new TCanvas();
+
+  // partons
+  tr->Draw("DP2DP_Dr>>dp2dp_r","DP2DP_Dr<1");
+  TH1F *hDiv = (TH1F*)gDirectory->Get("dp2dp_r");
+  hDiv->SetMarkerStyle(kFullCircle);
+  hDiv->SetMarkerColor(1);
+
+  hDiv->GetYaxis()->SetTitle("Count");
+  hDiv->GetXaxis()->SetTitle("#delta_R");
+
+  TH1 *h1 = hDiv->DrawCopy();
+}
+
+
+
+
+
+void FF(TString str = "JetToyHIResultSimpleJetAnalysis.root")
+{
+  TTree *tr = getTree();
+
+  int nEvt = tr->GetEntriesFast();
+
+
+  auto C = new TCanvas();
+
+  // partons
+  tr->Draw("FF_quark>>quark");
+  TH1F *hDiv = (TH1F*)gDirectory->Get("quark");
+  hDiv->SetLineColor(1);
+  hDiv->SetLineWidth(3);
+  hDiv->SetTitle("FF by jetParent");
+  // jets
+  tr->Draw("FF_gluon>>gluon");
+  TH1F *hDiv2 = (TH1F*)gDirectory->Get("gluon");
+  hDiv2->SetLineColor(2);
+  hDiv2->SetLineWidth(2);
+  // daughterpartons
+  tr->Draw("FF_other>>other");
+  TH1F *hDiv3 = (TH1F*)gDirectory->Get("other");
+  hDiv3->SetLineColor(4);
+  hDiv3->SetLineWidth(2);
+  hDiv3->SetLineStyle(kDotted);
+
+
+  hDiv->GetXaxis()->SetTitle("ConstituentPt/JetPt");
+  hDiv->GetYaxis()->SetTitle("#");
+
+
+  TH1 *h1 = hDiv->DrawCopy();
+  TH1 *h2 = hDiv2->DrawCopy("same");
+  TH1 *h3 = hDiv3->DrawCopy("same");
+  
+  TLegend *legend = new TLegend(0.55,0.65,0.76,0.82);
+  legend->AddEntry(h1,"quarks");
+  legend->AddEntry(h2,"gluons");
+  legend->AddEntry(h3,"others");
+  legend->Draw();
+}
+
+
+
+
+
+
 void dp_pt_phi(TString str = "JetToyHIResultSimpleJetAnalysis.root")
 {
   TTree *tr = getTree();
