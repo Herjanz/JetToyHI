@@ -29,6 +29,8 @@ using namespace fastjet;
 
 // ./runSimpleJetAnalysis -hard /Users/mverweij/mnt/eos/project/j/jetquenching/JetWorkshop2017/samples/pythia8/dijet120/PythiaEventsTune14PtHat120_0.pu14 -nev 10
 
+bool containsHadrons(vector<PseudoJet> particles);
+
 int main (int argc, char ** argv) {
 
   auto start_time = chrono::steady_clock::now();
@@ -139,6 +141,9 @@ int main (int argc, char ** argv) {
     vector<PseudoJet> daughterPartons = parton_selector_split(particlesMergedAll);
 
     trw.addPartonCollection("daughterPartons", daughterPartons);
+    // skip this event if daughters are already hadronized
+    if(containsHadrons(daughterPartons))
+      continue;
     
     // daughterparton[0/1] belong to parton[0] and dp[2/3] belong to p[1]
     // get dr between daughter partons
@@ -215,20 +220,38 @@ int main (int argc, char ** argv) {
 
     // making FF for jets by parent PDG
     vector<PseudoJet> jetsWithQuarkParents, jetsWithGluonParents, otherJets;
+    //vector<PseudoJet> jetsWithQuarkParentsInPtRange[9], jetsWithGluonParentsInPtRange[9], otherJetsInPtRange[9];
     for(PtoPInfo match : JtoJPmatches)
     {
+      int ptRangeIndex = (int(match.out.pt())-10)/5;
+      if(ptRangeIndex < 0 || ptRangeIndex > 7)
+        ptRangeIndex = 8;
+      string range = to_string(10 + 5*ptRangeIndex) + "to" + to_string(15+5*ptRangeIndex);
+      if(ptRangeIndex == 8)
+        range = "Outside";
+
       int parentPDG = getPDG(match.in);
-      if(parentPDG < 7 && parentPDG > -7)
+
+      vector<PseudoJet> jet;
+      jet.push_back(match.out);
+
+      if(parentPDG > -7 && parentPDG < 7)
       {
         jetsWithQuarkParents.push_back(match.out);
+        //jetsWithQuarkParentsInPtRange[ptRangeIndex].push_back(match.out);
+        trw.addJetCollection("jetsWithQuarkParentsInPtRange" + range, jet);
       }
       else if(parentPDG == 21)
       {
         jetsWithGluonParents.push_back(match.out);
+        //jetsWithGluonParentsInPtRange[ptRangeIndex].push_back(match.out);
+        trw.addJetCollection("jetsWithGluonParentsInPtRange" + range, jet);
       }
       else
       {
         otherJets.push_back(match.out);
+        //otherJetsInPtRange[ptRangeIndex].push_back(match.out);
+        trw.addJetCollection("otherJetsInPtRange" + range, jet);
       }
     }
 
@@ -238,6 +261,19 @@ int main (int argc, char ** argv) {
       trw.addJetCollection("jetsWithGluonParents", jetsWithGluonParents);
     if(otherJets.size() > 0)
       trw.addJetCollection("otherJets", otherJets);
+
+    // for(int i = 0; i < 9; i++)
+    // {
+    //   string range = to_string(10 + 5*i) + "-" + to_string(15+5*i);
+    //   if(i == 8)
+    //     range = "Outside";
+    //   if(jetsWithQuarkParentsInPtRange[i].size() > 0)
+    //     trw.addJetCollection("jetsWithQuarkParentsInPtRange" + range, jetsWithQuarkParentsInPtRange[i]);
+    //   if(jetsWithGluonParentsInPtRange[i].size() > 0)
+    //     trw.addJetCollection("jetsWithGluonParentsInPtRange" + range, jetsWithGluonParentsInPtRange[i]);
+    //   if(otherJetsInPtRange[i].size() > 0)
+    //     trw.addJetCollection("otherJetsInPtRange" + range, otherJetsInPtRange[i]);
+    // }
 
     for(PseudoJet jet : jetsWithQuarkParents)
       trw.addDoubleCollection("FF_quark", PtZ.getFF(jet));
@@ -333,4 +369,15 @@ int main (int argc, char ** argv) {
   double time_in_seconds = chrono::duration_cast<chrono::milliseconds>
     (chrono::steady_clock::now() - start_time).count() / 1000.0;
   cout << "runFromFile: " << time_in_seconds << endl;
+}
+
+bool containsHadrons(vector<PseudoJet> particles)
+{
+  for(int i = 0; i < particles.size(); i++)
+  {
+    int daughterPDG = getPDG(particles[i]);
+    if(daughterPDG > 99 || daughterPDG < -99)
+      return true;
+  }
+  return false;
 }
