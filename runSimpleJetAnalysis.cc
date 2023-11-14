@@ -21,7 +21,6 @@
 #include "include/jetMatcher.hh"
 #include "include/Angularity.hh"
 
-#include "include/Fragmentation.hh"
 #include "include/ParticleToParticle.hh"
 
 using namespace std;
@@ -63,7 +62,6 @@ int main (int argc, char ** argv) {
   Angularity width(1.,1.,R);
   Angularity pTD(0.,2.,R);
 
-  Fragmentation PtZ;
   ParticleToParticle PtoP;
     
   ProgressBar Bar(cout, nEvent);
@@ -218,18 +216,10 @@ int main (int argc, char ** argv) {
     
     trw.addPartonCollection("jetParents", jetParents);
 
-    // making FF for jets by parent PDG
+    // sorting jets by parent PDG
     vector<PseudoJet> jetsWithQuarkParents, jetsWithGluonParents, otherJets;
-    //vector<PseudoJet> jetsWithQuarkParentsInPtRange[9], jetsWithGluonParentsInPtRange[9], otherJetsInPtRange[9];
     for(PtoPInfo match : JtoJPmatches)
     {
-      int ptRangeIndex = (int(match.out.pt())-10)/5;
-      if(ptRangeIndex < 0 || ptRangeIndex > 7)
-        ptRangeIndex = 8;
-      string range = to_string(10 + 5*ptRangeIndex) + "to" + to_string(15+5*ptRangeIndex);
-      if(ptRangeIndex == 8)
-        range = "Outside";
-
       int parentPDG = getPDG(match.in);
 
       vector<PseudoJet> jet;
@@ -238,50 +228,21 @@ int main (int argc, char ** argv) {
       if(parentPDG > -7 && parentPDG < 7)
       {
         jetsWithQuarkParents.push_back(match.out);
-        //jetsWithQuarkParentsInPtRange[ptRangeIndex].push_back(match.out);
-        trw.addJetCollection("jetsWithQuarkParentsInPtRange" + range, jet);
       }
       else if(parentPDG == 21)
       {
         jetsWithGluonParents.push_back(match.out);
-        //jetsWithGluonParentsInPtRange[ptRangeIndex].push_back(match.out);
-        trw.addJetCollection("jetsWithGluonParentsInPtRange" + range, jet);
       }
       else
       {
+        cout << parentPDG << endl;
         otherJets.push_back(match.out);
-        //otherJetsInPtRange[ptRangeIndex].push_back(match.out);
-        trw.addJetCollection("otherJetsInPtRange" + range, jet);
       }
     }
 
-    if(jetsWithQuarkParents.size() > 0)
-      trw.addJetCollection("jetsWithQuarkParents", jetsWithQuarkParents);
-    if(jetsWithGluonParents.size() > 0)
-      trw.addJetCollection("jetsWithGluonParents", jetsWithGluonParents);
-    if(otherJets.size() > 0)
-      trw.addJetCollection("otherJets", otherJets);
-
-    // for(int i = 0; i < 9; i++)
-    // {
-    //   string range = to_string(10 + 5*i) + "-" + to_string(15+5*i);
-    //   if(i == 8)
-    //     range = "Outside";
-    //   if(jetsWithQuarkParentsInPtRange[i].size() > 0)
-    //     trw.addJetCollection("jetsWithQuarkParentsInPtRange" + range, jetsWithQuarkParentsInPtRange[i]);
-    //   if(jetsWithGluonParentsInPtRange[i].size() > 0)
-    //     trw.addJetCollection("jetsWithGluonParentsInPtRange" + range, jetsWithGluonParentsInPtRange[i]);
-    //   if(otherJetsInPtRange[i].size() > 0)
-    //     trw.addJetCollection("otherJetsInPtRange" + range, otherJetsInPtRange[i]);
-    // }
-
-    for(PseudoJet jet : jetsWithQuarkParents)
-      trw.addDoubleCollection("FF_quark", PtZ.getFF(jet));
-    for(PseudoJet jet : jetsWithGluonParents)
-      trw.addDoubleCollection("FF_gluon", PtZ.getFF(jet));
-    for(PseudoJet jet : otherJets)
-      trw.addDoubleCollection("FF_other", PtZ.getFF(jet));
-    // end of FF
+    trw.addJetCollection("jetsWithQuarkParents", jetsWithQuarkParents, true);
+    trw.addJetCollection("jetsWithGluonParents", jetsWithGluonParents, true);
+    trw.addJetCollection("otherJets", otherJets, true);
 
     // ---- ANALYZE ----
     bool doPrintInfo = false;

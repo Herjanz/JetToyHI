@@ -151,9 +151,6 @@ void dp2dp_r(TString str = "JetToyHIResultSimpleJetAnalysis.root")
 }
 
 
-
-
-
 void FF(TString str = "JetToyHIResultSimpleJetAnalysis.root")
 {
   TTree *tr = getTree();
@@ -164,18 +161,18 @@ void FF(TString str = "JetToyHIResultSimpleJetAnalysis.root")
   auto C = new TCanvas();
 
   // partons
-  tr->Draw("FF_quark>>quark");
+  tr->Draw("jetsWithQuarkParentsConstPt/jetsWithQuarkParentsPt>>quark");
   TH1F *hDiv = (TH1F*)gDirectory->Get("quark");
   hDiv->SetLineColor(1);
   hDiv->SetLineWidth(3);
   hDiv->SetTitle("FF by jetParent");
   // jets
-  tr->Draw("FF_gluon>>gluon");
+  tr->Draw("jetsWithGluonParentsConstPt/jetsWithGluonParentsPt>>gluon");
   TH1F *hDiv2 = (TH1F*)gDirectory->Get("gluon");
   hDiv2->SetLineColor(2);
   hDiv2->SetLineWidth(2);
   // daughterpartons
-  tr->Draw("FF_other>>other");
+  tr->Draw("otherJetsConstPt/otherJetsPt>>other");
   TH1F *hDiv3 = (TH1F*)gDirectory->Get("other");
   hDiv3->SetLineColor(4);
   hDiv3->SetLineWidth(2);
@@ -184,6 +181,7 @@ void FF(TString str = "JetToyHIResultSimpleJetAnalysis.root")
 
   hDiv->GetXaxis()->SetTitle("ConstituentPt/JetPt");
   hDiv->GetYaxis()->SetTitle("#");
+  gPad->SetLogy();
 
 
   TH1 *h1 = hDiv->DrawCopy();
@@ -196,6 +194,94 @@ void FF(TString str = "JetToyHIResultSimpleJetAnalysis.root")
   legend->AddEntry(h3,"others");
   legend->Draw();
 }
+
+void FFbyPt(int minPt=25, int maxPt=30, TString str = "JetToyHIResultSimpleJetAnalysis.root")
+{
+  TTree *tr = getTree();
+
+  int nEvt = tr->GetEntriesFast();
+
+
+  auto C = new TCanvas();
+
+  // partons
+  tr->Draw("jetsWithQuarkParentsConstPt/jetsWithQuarkParentsPt>>quark", (TString) ("jetsWithQuarkParentsPt > " + to_string(minPt) + " && jetsWithQuarkParentsPt < " + to_string(maxPt)));
+  TH1F *hDiv = (TH1F*)gDirectory->Get("quark");
+  hDiv->SetLineColor(1);
+  hDiv->SetLineWidth(3);
+  hDiv->SetTitle((TString) ("FF by jetParent for " + to_string(minPt) + " < Z < " + to_string(maxPt)));
+  // jets
+  tr->Draw("jetsWithGluonParentsConstPt/jetsWithGluonParentsPt>>gluon", (TString) ("jetsWithGluonParentsPt > " + to_string(minPt) + " && jetsWithGluonParentsPt < " + to_string(maxPt)));
+  TH1F *hDiv2 = (TH1F*)gDirectory->Get("gluon");
+  hDiv2->SetLineColor(2);
+  hDiv2->SetLineWidth(2);
+  // daughterpartons
+  tr->Draw("otherJetsConstPt/otherJetsPt>>other", (TString) ("otherJetsPt > " + to_string(minPt) + " && otherJetsPt < " + to_string(maxPt)));
+  TH1F *hDiv3 = (TH1F*)gDirectory->Get("other");
+  hDiv3->SetLineColor(4);
+  hDiv3->SetLineWidth(2);
+  hDiv3->SetLineStyle(kDotted);
+
+
+  hDiv->GetXaxis()->SetTitle("ConstituentPt/JetPt");
+  hDiv->GetYaxis()->SetTitle("#");
+  gPad->SetLogy();
+
+
+  TH1 *h1 = hDiv->DrawCopy();
+  TH1 *h2 = hDiv2->DrawCopy("same");
+  TH1 *h3 = hDiv3->DrawCopy("same");
+  
+  TLegend *legend = new TLegend(0.55,0.65,0.76,0.82);
+  legend->AddEntry(h1,"quarks");
+  legend->AddEntry(h2,"gluons");
+  legend->AddEntry(h3,"others");
+  legend->Draw();
+}
+
+
+// void FF(TString str = "JetToyHIResultSimpleJetAnalysis.root")
+// {
+//   TTree *tr = getTree();
+
+//   int nEvt = tr->GetEntriesFast();
+
+
+//   auto C = new TCanvas();
+
+//   // partons
+//   tr->Draw("FF_quark>>quark");
+//   TH1F *hDiv = (TH1F*)gDirectory->Get("quark");
+//   hDiv->SetLineColor(1);
+//   hDiv->SetLineWidth(3);
+//   hDiv->SetTitle("FF by jetParent");
+//   // jets
+//   tr->Draw("FF_gluon>>gluon");
+//   TH1F *hDiv2 = (TH1F*)gDirectory->Get("gluon");
+//   hDiv2->SetLineColor(2);
+//   hDiv2->SetLineWidth(2);
+//   // daughterpartons
+//   tr->Draw("FF_other>>other");
+//   TH1F *hDiv3 = (TH1F*)gDirectory->Get("other");
+//   hDiv3->SetLineColor(4);
+//   hDiv3->SetLineWidth(2);
+//   hDiv3->SetLineStyle(kDotted);
+
+
+//   hDiv->GetXaxis()->SetTitle("ConstituentPt/JetPt");
+//   hDiv->GetYaxis()->SetTitle("#");
+
+
+//   TH1 *h1 = hDiv->DrawCopy();
+//   TH1 *h2 = hDiv2->DrawCopy("same");
+//   TH1 *h3 = hDiv3->DrawCopy("same");
+  
+//   TLegend *legend = new TLegend(0.55,0.65,0.76,0.82);
+//   legend->AddEntry(h1,"quarks");
+//   legend->AddEntry(h2,"gluons");
+//   legend->AddEntry(h3,"others");
+//   legend->Draw();
+// }
 
 
 
