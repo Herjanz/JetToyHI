@@ -215,15 +215,11 @@ void FF(double minPt=0., double maxPt=50., TString str = "JetToyHIResultSimpleJe
   legend->Draw();
 }
 
-void FF_HEP(TString str = "JetToyHIResultSimpleJetAnalysis.root")
+void FF_HEP(double minPt=40., double maxPt=50., TString str = "JetToyHIResultSimpleJetAnalysis.root")
 {
-  //TTree *tr1 = getTree("HEPData-ins467225.root", "Table6");
-
-  TTree *tr = getTree();
+  cout << str << endl;
+  TTree *tr = getTree(str);
   //int nEvt = tr->GetEntriesFast();
-
-  double minPt = 40.;
-  double maxPt = 50.;
 
   auto C = new TCanvas();
 
@@ -257,12 +253,27 @@ void FF_HEP(TString str = "JetToyHIResultSimpleJetAnalysis.root")
   TFile f("HEPData-ins467225.root");
 
   TH1F *hDiv3 = (TH1F*)f.Get("Table 6/Hist1D_y1");
-  hDiv3->SetLineColor(3);
+  hDiv3->SetLineColor(1);
   hDiv3->SetLineWidth(2);
+  hDiv3->SetLineStyle(7);
+  TH1F *hDiv3_e1_stat = (TH1F*)f.Get("Table 6/Hist1D_y1_e1");
+  TH1F *hDiv3_e2_stat = (TH1F*)f.Get("Table 6/Hist1D_y1_e2");
+  for(int i = 1; i <= nBins; i++)
+  {
+    hDiv3->SetBinError(i, sqrt(hDiv3_e1_stat->GetBinContent(i)*hDiv3_e1_stat->GetBinContent(i) + hDiv3_e2_stat->GetBinContent(i)*hDiv3_e2_stat->GetBinContent(i)));
+  }
+  //hDiv3->SetError(hDiv3_e_stat->GetEntries());
 
   TH1F *hDiv4 = (TH1F*)f.Get("Table 6/Hist1D_y2");
-  hDiv4->SetLineColor(11);
+  hDiv4->SetLineColor(2);
   hDiv4->SetLineWidth(2);
+  hDiv4->SetLineStyle(7);
+  TH1F *hDiv4_e1_stat = (TH1F*)f.Get("Table 6/Hist1D_y2_e1");
+  TH1F *hDiv4_e2_stat = (TH1F*)f.Get("Table 6/Hist1D_y2_e2");
+  for(int i = 1; i <= nBins; i++)
+  {
+    hDiv4->SetBinError(i, sqrt(hDiv4_e1_stat->GetBinContent(i)*hDiv4_e1_stat->GetBinContent(i) + hDiv4_e2_stat->GetBinContent(i)*hDiv4_e2_stat->GetBinContent(i)));
+  }
   // END HEPdata
 
 
@@ -272,7 +283,7 @@ void FF_HEP(TString str = "JetToyHIResultSimpleJetAnalysis.root")
   gPad->SetLogy();
 
 
-  TH1 *h1 = hDiv->DrawCopy();
+  TH1 *h1 = hDiv->DrawCopy("");
   TH1 *h2 = hDiv2->DrawCopy("same");
   TH1 *h3 = hDiv3->DrawCopy("same");
   TH1 *h4 = hDiv4->DrawCopy("same");
