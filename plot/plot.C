@@ -150,9 +150,9 @@ void dp2dp_r(TString str = "JetToyHIResultSimpleJetAnalysis.root")
   TH1 *h1 = hDiv->DrawCopy();
 }
 
-int getNumberOfValuesInRange(TTree *tr, TString field, double start, double end)
+int getNumberOfValuesInRange(TTree *tr, TString field, double start, double end, TString conditions = "")
 {
-  tr->Draw((TString) (field + ">>f(100, 0., 100.)"));
+  tr->Draw((TString) (field + ">>f(100, 0., 100.)"), conditions);
   TH1F *hist = (TH1F*)gDirectory->Get("f");
   int binLow = hist->GetXaxis()->GetBinLowEdge(hist->GetXaxis()->FindBin(start));
   int binHigh = hist->GetXaxis()->GetBinLowEdge(hist->GetXaxis()->FindBin(end))+1;
@@ -168,16 +168,19 @@ void FF(double minPt=0., double maxPt=50., TString str = "JetToyHIResultSimpleJe
 
   int nEvt = tr->GetEntriesFast();
 
-
   auto C = new TCanvas();
 
+  TString quark_conditions = (TString) ("jetsWithQuarkParentsPt > " + to_string(minPt) + " && jetsWithQuarkParentsPt < " + to_string(maxPt));
+  TString gluon_conditions = (TString) ("jetsWithGluonParentsPt > " + to_string(minPt) + " && jetsWithGluonParentsPt < " + to_string(maxPt));
+  TString other_conditions = (TString) ("otherJetsPt > " + to_string(minPt) + " && otherJetsPt < " + to_string(maxPt));
+
   // get number of jets for scaling
-  int nQuarkJets = getNumberOfValuesInRange(tr, "jetsWithQuarkParentsPt", minPt, maxPt);
-  int nGluonJets = getNumberOfValuesInRange(tr, "jetsWithGluonParentsPt", minPt, maxPt);
-  int nOtherJets = getNumberOfValuesInRange(tr, "otherJetsPt", minPt, maxPt);
+  int nQuarkJets = getNumberOfValuesInRange(tr, "jetsWithQuarkParentsPt", minPt, maxPt, quark_conditions);
+  int nGluonJets = getNumberOfValuesInRange(tr, "jetsWithGluonParentsPt", minPt, maxPt, gluon_conditions);
+  int nOtherJets = getNumberOfValuesInRange(tr, "otherJetsPt", minPt, maxPt, other_conditions);
 
   // partons
-  tr->Draw("jetsWithQuarkParentsConstPt/jetsWithQuarkParentsPt>>quark(20, 0., 1.)", (TString) ("jetsWithQuarkParentsPt > " + to_string(minPt) + " && jetsWithQuarkParentsPt < " + to_string(maxPt)));
+  tr->Draw("jetsWithQuarkParentsConstPt/jetsWithQuarkParentsPt>>quark(20, 0., 1.)", quark_conditions);
   TH1F *hDiv = (TH1F*)gDirectory->Get("quark");
   hDiv->SetLineColor(1);
   hDiv->SetLineWidth(3);
@@ -185,13 +188,13 @@ void FF(double minPt=0., double maxPt=50., TString str = "JetToyHIResultSimpleJe
   hDiv->Scale(1./nQuarkJets, "width");
   //hDiv->Sumw2(); already created due to Scale()
   // jets
-  tr->Draw("jetsWithGluonParentsConstPt/jetsWithGluonParentsPt>>gluon(20, 0., 1.)", (TString) ("jetsWithGluonParentsPt > " + to_string(minPt) + " && jetsWithGluonParentsPt < " + to_string(maxPt)));
+  tr->Draw("jetsWithGluonParentsConstPt/jetsWithGluonParentsPt>>gluon(20, 0., 1.)", gluon_conditions);
   TH1F *hDiv2 = (TH1F*)gDirectory->Get("gluon");
   hDiv2->SetLineColor(2);
   hDiv2->SetLineWidth(2);
   hDiv2->Scale(1./nGluonJets, "width");
   // daughterpartons
-  tr->Draw("otherJetsConstPt/otherJetsPt>>other(20, 0., 1.)", (TString) ("otherJetsPt > " + to_string(minPt) + " && otherJetsPt < " + to_string(maxPt)));
+  tr->Draw("otherJetsConstPt/otherJetsPt>>other(20, 0., 1.)", other_conditions );
   TH1F *hDiv3 = (TH1F*)gDirectory->Get("other");
   hDiv3->SetLineColor(4);
   hDiv3->SetLineWidth(2);
@@ -215,23 +218,30 @@ void FF(double minPt=0., double maxPt=50., TString str = "JetToyHIResultSimpleJe
   legend->Draw();
 }
 
-void FF_HEP(double minPt=40., double maxPt=50., TString str = "JetToyHIResultSimpleJetAnalysis.root")
+void FF_HEP(double minPt=4.5, double maxPt=45., TString str = "JetToyHIResultSimpleJetAnalysis.root")
 {
-  cout << str << endl;
   TTree *tr = getTree(str);
   //int nEvt = tr->GetEntriesFast();
 
   auto C = new TCanvas();
 
+  string conditions = "jetsWithQuarkParentsPt > " + to_string(minPt) + " && jetsWithQuarkParentsPt < " + to_string(maxPt);
+  conditions += " && jetsWithQuarkParentsEta <= 1.15";
+  TString quark_conditions = (TString) conditions;
+  conditions = "jetsWithGluonParentsPt > " + to_string(minPt) + " && jetsWithGluonParentsPt < " + to_string(maxPt);
+  conditions += " && jetsWithGluonParentsEta <= 1.15";
+  TString gluon_conditions = (TString) conditions;
+
   // get number of jets for scaling
-  int nQuarkJets = getNumberOfValuesInRange(tr, "jetsWithQuarkParentsPt", minPt, maxPt);
-  int nGluonJets = getNumberOfValuesInRange(tr, "jetsWithGluonParentsPt", minPt, maxPt);
+  int nQuarkJets = getNumberOfValuesInRange(tr, "jetsWithQuarkParentsPt", minPt, maxPt, quark_conditions);
+  int nGluonJets = getNumberOfValuesInRange(tr, "jetsWithGluonParentsPt", minPt, maxPt, gluon_conditions);
   
-  const Int_t nBins = 7;
-  const Double_t binEdges[nBins+1] = {0, 0.05, 0.1, 0.15, 0.25, 0.35, 0.55, 0.8};
+  const Int_t nBins = 8;
+  const Double_t binEdges[nBins+1] = {0, 0.05, 0.1, 0.15, 0.25, 0.35, 0.55, 0.8, 1.2};
 
   // quark
-  tr->Draw("jetsWithQuarkParentsConstPt/jetsWithQuarkParentsPt>>quark(16, 0., 0.8)", (TString) ("jetsWithQuarkParentsPt > " + to_string(minPt) + " && jetsWithQuarkParentsPt < " + to_string(maxPt)));
+  
+  tr->Draw("jetsWithQuarkParentsConstPt/jetsWithQuarkParentsPt>>quark(16, 0., 0.8)", quark_conditions);
   TH1F *hDiv = (TH1F*)gDirectory->Get("quark");
   hDiv->SetBins(nBins, binEdges);
   hDiv->SetLineColor(1);
@@ -241,7 +251,7 @@ void FF_HEP(double minPt=40., double maxPt=50., TString str = "JetToyHIResultSim
   //hDiv->Sumw2(); already created due to Scale()
 
   // gluon
-  tr->Draw("jetsWithGluonParentsConstPt/jetsWithGluonParentsPt>>gluon(16, 0., 0.8)", (TString) ("jetsWithGluonParentsPt > " + to_string(minPt) + " && jetsWithGluonParentsPt < " + to_string(maxPt)));
+  tr->Draw("jetsWithGluonParentsConstPt/jetsWithGluonParentsPt>>gluon(16, 0., 0.8)", gluon_conditions);
   TH1F *hDiv2 = (TH1F*)gDirectory->Get("gluon");
   hDiv2->SetBins(nBins, binEdges);
   hDiv2->SetLineColor(2);
@@ -251,6 +261,7 @@ void FF_HEP(double minPt=40., double maxPt=50., TString str = "JetToyHIResultSim
 
   // File from research paper to compare with
   TFile f("HEPData-ins467225.root");
+  const Int_t nBinsHEP = 7;
 
   TH1F *hDiv3 = (TH1F*)f.Get("Table 6/Hist1D_y1");
   hDiv3->SetLineColor(1);
@@ -258,7 +269,7 @@ void FF_HEP(double minPt=40., double maxPt=50., TString str = "JetToyHIResultSim
   hDiv3->SetLineStyle(7);
   TH1F *hDiv3_e1_stat = (TH1F*)f.Get("Table 6/Hist1D_y1_e1");
   TH1F *hDiv3_e2_stat = (TH1F*)f.Get("Table 6/Hist1D_y1_e2");
-  for(int i = 1; i <= nBins; i++)
+  for(int i = 1; i <= nBinsHEP; i++)
   {
     hDiv3->SetBinError(i, sqrt(hDiv3_e1_stat->GetBinContent(i)*hDiv3_e1_stat->GetBinContent(i) + hDiv3_e2_stat->GetBinContent(i)*hDiv3_e2_stat->GetBinContent(i)));
   }
@@ -270,7 +281,7 @@ void FF_HEP(double minPt=40., double maxPt=50., TString str = "JetToyHIResultSim
   hDiv4->SetLineStyle(7);
   TH1F *hDiv4_e1_stat = (TH1F*)f.Get("Table 6/Hist1D_y2_e1");
   TH1F *hDiv4_e2_stat = (TH1F*)f.Get("Table 6/Hist1D_y2_e2");
-  for(int i = 1; i <= nBins; i++)
+  for(int i = 1; i <= nBinsHEP; i++)
   {
     hDiv4->SetBinError(i, sqrt(hDiv4_e1_stat->GetBinContent(i)*hDiv4_e1_stat->GetBinContent(i) + hDiv4_e2_stat->GetBinContent(i)*hDiv4_e2_stat->GetBinContent(i)));
   }
