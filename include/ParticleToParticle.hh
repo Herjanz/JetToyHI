@@ -88,8 +88,8 @@ public:
 
       if(childParent)
       {
-        if(info.ptFraction > 1 && second.ptFraction < info.ptFraction)
-          if(abs(second.dr - info.dr) < 0.2)
+        if(info.ptFraction > 1.1 && second.ptFraction < info.ptFraction)
+          if(abs(second.dr - info.dr) < 0.1)
             info = second;
       }
 

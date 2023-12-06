@@ -48,19 +48,20 @@ int main (int argc, char ** argv) {
   treeWriter trw("jetTree");
 
   //Jet definition
-  double R                   = 1.6;
-  double ghostRapMax         = 6.0;
-  double ghost_area          = 0.005;
-  int    active_area_repeats = 1;
-  GhostedAreaSpec ghost_spec(ghostRapMax, active_area_repeats, ghost_area);
-  AreaDefinition area_def = AreaDefinition(active_area,ghost_spec);
-  JetDefinition jet_def(antikt_algorithm, R);
+  // double R                   = 0.4;
+  // double ghostRapMax         = 6.0;
+  // double ghost_area          = 0.005;
+  // int    active_area_repeats = 1;
+  // GhostedAreaSpec ghost_spec(ghostRapMax, active_area_repeats, ghost_area);
+  // AreaDefinition area_def = AreaDefinition(active_area,ghost_spec);
+  double ycut = 0.02;
+  JetDefinition jet_def(ee_kt_algorithm);
 
   double jetRapMax = 3.0;
   Selector jet_selector = SelectorAbsRapMax(jetRapMax);
 
-  Angularity width(1.,1.,R);
-  Angularity pTD(0.,2.,R);
+  //Angularity width(1.,1.,R);
+  //Angularity pTD(0.,2.,R);
 
   ParticleToParticle PtoP;
     
@@ -110,11 +111,12 @@ int main (int argc, char ** argv) {
     //   jet clustering
     //---------------------------------------------------------------------------
 
-    fastjet::ClusterSequenceArea csSig(particlesSig, jet_def, area_def);
-    jetCollection jetCollectionSig(sorted_by_pt(jet_selector(csSig.inclusive_jets(10.))));
+    fastjet::ClusterSequence clust_seq(particlesSig, jet_def);
+    int n = clust_seq.n_exclusive_jets_ycut(ycut); // get 3 exclusive jets
+    jetCollection jetCollectionSig(sorted_by_pt(jet_selector(clust_seq.exclusive_jets(n))));
 
     //calculate some angularities & fragmentations
-    vector<double> widthSig; widthSig.reserve(jetCollectionSig.getJet().size());
+    /*vector<double> widthSig; widthSig.reserve(jetCollectionSig.getJet().size());
     vector<double> pTDSig;   pTDSig.reserve(jetCollectionSig.getJet().size());
     for(PseudoJet jet : jetCollectionSig.getJet()) {
       widthSig.push_back(width.result(jet));
@@ -122,7 +124,7 @@ int main (int argc, char ** argv) {
     }
     jetCollectionSig.addVector("widthSig", widthSig);
     jetCollectionSig.addVector("pTDSig", pTDSig);
-
+    */ // only works with old clustering algorithm based on R
 
 
 
@@ -182,17 +184,18 @@ int main (int argc, char ** argv) {
 
     // if dr between DPs is very small, ignore them because they belong to one jet
     int validDPs = 0;
-    for (int i = 0; i < DP2DP_Dr.size(); ++i)
+    for (unsigned int i = 0; i < DP2DP_Dr.size(); ++i)
     {
       int dpsAdded = 0;
-      if(DP2DP_Dr[i] > 0.1)
+      double minDr = 0.1;
+      if(DP2DP_Dr[i] > minDr)
       {
-        if(DP2P_Dr[i*2] > 0.1 && daughterPartons[i*2].pt() > 9)
+        if(DP2P_Dr[i*2] > minDr && daughterPartons[i*2].pt() > 4)
         {
           jetParents.push_back(daughterPartons[i*2]);
           dpsAdded++;
         }
-        if(DP2P_Dr[i*2+1] > 0.1 && daughterPartons[i*2+1].pt() > 9)
+        if(DP2P_Dr[i*2+1] > minDr && daughterPartons[i*2+1].pt() > 4)
         {
           jetParents.push_back(daughterPartons[i*2+1]);
           dpsAdded++;
@@ -254,7 +257,7 @@ int main (int argc, char ** argv) {
       {
         cout << "validPartons: " << partons.size() << " validDPs: " << validDPs << " jetParents: " << jetParents.size() << endl;
 
-        for(int i = 0; i < getPtFracVector(JtoJPmatches).size(); i++)
+        for(unsigned int i = 0; i < getPtFracVector(JtoJPmatches).size(); i++)
           cout << "JtoJPfrac: " << getPtFracVector(JtoJPmatches)[i] << " JtoJPdr: " << getDrVector(JtoJPmatches)[i] << endl;
 
         cout << "DP2DP 0 to 1: "<< DP2DP_Dr[0] << endl;
@@ -334,7 +337,7 @@ int main (int argc, char ** argv) {
 
 bool containsHadrons(vector<PseudoJet> particles)
 {
-  for(int i = 0; i < particles.size(); i++)
+  for(unsigned int i = 0; i < particles.size(); i++)
   {
     int daughterPDG = getPDG(particles[i]);
     if(daughterPDG > 99 || daughterPDG < -99)

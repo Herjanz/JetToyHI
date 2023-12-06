@@ -226,10 +226,10 @@ void FF_HEP(double minPt=4.5, double maxPt=45., TString str = "JetToyHIResultSim
   auto C = new TCanvas();
 
   string conditions = "jetsWithQuarkParentsPt > " + to_string(minPt) + " && jetsWithQuarkParentsPt < " + to_string(maxPt);
-  conditions += " && jetsWithQuarkParentsEta <= 1.15";
+  conditions += " && abs(jetsWithQuarkParentsEta) <= 1.15";
   TString quark_conditions = (TString) conditions;
   conditions = "jetsWithGluonParentsPt > " + to_string(minPt) + " && jetsWithGluonParentsPt < " + to_string(maxPt);
-  conditions += " && jetsWithGluonParentsEta <= 1.15";
+  conditions += " && abs(jetsWithGluonParentsEta) <= 1.15";
   TString gluon_conditions = (TString) conditions;
 
   // get number of jets for scaling
@@ -240,7 +240,6 @@ void FF_HEP(double minPt=4.5, double maxPt=45., TString str = "JetToyHIResultSim
   const Double_t binEdges[nBins+1] = {0, 0.05, 0.1, 0.15, 0.25, 0.35, 0.55, 0.8, 1.2};
 
   // quark
-  
   tr->Draw("jetsWithQuarkParentsConstPt/jetsWithQuarkParentsPt>>quark(16, 0., 0.8)", quark_conditions);
   TH1F *hDiv = (TH1F*)gDirectory->Get("quark");
   hDiv->SetBins(nBins, binEdges);
@@ -287,10 +286,24 @@ void FF_HEP(double minPt=4.5, double maxPt=45., TString str = "JetToyHIResultSim
   }
   // END HEPdata
 
+  // scale pythia data with HEP data
+  if(false)
+  {
+    const int bin = 3;
+    int numberPytQuark = hDiv->Integral(bin, bin);
+    int numberHEPQuark = hDiv3->Integral(bin, bin);
+    hDiv->Scale(1.0 * numberHEPQuark/numberPytQuark);
+
+
+    int numberPytGluon = hDiv2->Integral(bin, bin);
+    int numberHEPGluon = hDiv4->Integral(bin, bin);
+    hDiv2->Scale(1.0 * numberHEPGluon/numberPytGluon);
+  }
+  // end of scaling
 
   hDiv->GetXaxis()->SetTitle("ConstituentPt/JetPt");
   hDiv->GetYaxis()->SetTitle("1/Njets dN/dz");
-  hDiv->GetYaxis()->SetRangeUser(0.01, 200);
+  hDiv->GetYaxis()->SetRangeUser(0.01, 600);
   gPad->SetLogy();
 
 
