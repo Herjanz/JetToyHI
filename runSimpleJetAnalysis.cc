@@ -54,7 +54,7 @@ int main (int argc, char ** argv) {
   // int    active_area_repeats = 1;
   // GhostedAreaSpec ghost_spec(ghostRapMax, active_area_repeats, ghost_area);
   // AreaDefinition area_def = AreaDefinition(active_area,ghost_spec);
-  double ycut = 0.02;
+  double ycut = 0.1;
   JetDefinition jet_def(ee_kt_algorithm);
 
   double jetRapMax = 3.0;
