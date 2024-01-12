@@ -48,14 +48,17 @@ int main (int argc, char ** argv) {
   treeWriter trw("jetTree");
 
   //Jet definition
-  // double R                   = 0.4;
-  // double ghostRapMax         = 6.0;
-  // double ghost_area          = 0.005;
-  // int    active_area_repeats = 1;
-  // GhostedAreaSpec ghost_spec(ghostRapMax, active_area_repeats, ghost_area);
-  // AreaDefinition area_def = AreaDefinition(active_area,ghost_spec);
-  double ycut = 0.1;
-  JetDefinition jet_def(ee_kt_algorithm);
+  // anti-kt
+  double R                   = 0.8;
+  double ghostRapMax         = 6.0;
+  double ghost_area          = 0.005;
+  int    active_area_repeats = 1;
+  GhostedAreaSpec ghost_spec(ghostRapMax, active_area_repeats, ghost_area);
+  AreaDefinition area_def = AreaDefinition(active_area,ghost_spec);
+  JetDefinition jet_def(antikt_algorithm, R);
+  // Durham
+  // double ycut = 0.1;
+  // JetDefinition jet_def(ee_kt_algorithm);
 
   double jetRapMax = 3.0;
   Selector jet_selector = SelectorAbsRapMax(jetRapMax);
@@ -111,9 +114,13 @@ int main (int argc, char ** argv) {
     //   jet clustering
     //---------------------------------------------------------------------------
 
-    fastjet::ClusterSequence clust_seq(particlesSig, jet_def);
-    int n = clust_seq.n_exclusive_jets_ycut(ycut); // get 3 exclusive jets
-    jetCollection jetCollectionSig(sorted_by_pt(jet_selector(clust_seq.exclusive_jets(n))));
+    // ant-kt
+    fastjet::ClusterSequenceArea csSig(particlesSig, jet_def, area_def);
+    jetCollection jetCollectionSig(sorted_by_pt(jet_selector(csSig.inclusive_jets(10.))));
+    // Durham
+    // fastjet::ClusterSequence clust_seq(particlesSig, jet_def);
+    // int n = clust_seq.n_exclusive_jets_ycut(ycut); // get 3 exclusive jets
+    // jetCollection jetCollectionSig(sorted_by_pt(jet_selector(clust_seq.exclusive_jets(n))));
 
     //calculate some angularities & fragmentations
     /*vector<double> widthSig; widthSig.reserve(jetCollectionSig.getJet().size());

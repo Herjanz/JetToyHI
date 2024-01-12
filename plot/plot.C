@@ -163,7 +163,7 @@ int getNumberOfValuesInRange(TTree *tr, TString field, double start, double end,
 
 void FF(bool HEP = true, bool isQuark = false, TString str = "JetToyHIResultSimpleJetAnalysis.root", double Q = 20, double minPt=4.5, double maxPt=45.)
 {
-  bool FIT = !HEP; // remove ! (and keep HEP parameter true) to draw FIT vs ALEPH data
+  bool FIT = HEP; // remove ! (and keep HEP parameter true) to draw FIT vs ALEPH data
 
   TTree *tr = getTree(str);
   //int nEvt = tr->GetEntriesFast();
@@ -330,8 +330,8 @@ void FF(bool HEP = true, bool isQuark = false, TString str = "JetToyHIResultSimp
   if(FIT)
     pl += "_FIT";
   string title = type + pl + "_Q=" + to_string(int(Q)) + "_minPt=" + to_string(int(minPt));
-  C->SaveAs((TString) ("img/ff/Durham_" + title + ".jpg"));
-  //C->SaveAs((TString) ("img/ff/Antikt_R=0,4_" + title + ".jpg"));
+  //C->SaveAs((TString) ("img/ff/Durham_" + title + ".jpg"));
+  C->SaveAs((TString) ("img/ff/" + (string)(str.Data()) + "_" + title + ".jpg"));
 }
 
 
@@ -381,8 +381,26 @@ void pt_jets(bool quark = true, TString str = "JetToyHIResultSimpleJetAnalysis.r
 
   TH1 *h1 = hDiv->DrawCopy();
 
-  string title = type + "_Durham";
+  string title = "ALEPHvsFIT";//type + "_" + (string)(str.Data());
   C->SaveAs((TString) ("img/jetpts/" + title + ".jpg"));
+}
+
+void plot_all()
+{
+  std::string roots[5] = {"dot4R.root", "dot8R.root", "1dot2R.root","1dot6R.root", "Durham.root"};
+  for(string r : roots)
+  {
+    pt_jets(true, (TString) r);
+    pt_jets(false, (TString) r);
+  }
+
+  for(string r : roots)
+  {
+    FF(true, true, (TString) r);
+    FF(true, false, (TString) r);
+    FF(false, true, (TString) r);
+    FF(false, false, (TString) r);
+  }
 }
 
 
