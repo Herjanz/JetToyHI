@@ -61,13 +61,14 @@ pythiaEvent::pythiaEvent(double pthat, unsigned int tune, double rapMin, double 
   // Allow no substructure in e+- beams: normal for corrected LEP data.
   pythia.readString("PDF:lepton = off");
   // Process selection.
-  pythia.readString("WeakSingleBoson:all = on");
+  pythia.readString("WeakSingleBoson:ffbar2gmZ = on");
   // Switch off all Z0 decays and then switch back on those to quarks.
   pythia.readString("23:onMode = off");
   pythia.readString("23:onIfAny = 1 2 3 4 5 6 21");
 
   //pythia.readString("HardQCD:all = on");
-  pythia.readString(Form("PhaseSpace:pTHatMin = %.1f",pthat_));
+  //pythia.readString(Form("PhaseSpace:pTHatMin = %.1f",pthat_));
+  pythia.readString("PhaseSpace:pTHatMin = 0");
   pythia.readString("Next:numberShowInfo = 0");
   pythia.readString("Next:numberShowProcess = 0");
   pythia.readString("Next:numberShowEvent = 0");
@@ -79,9 +80,10 @@ pythiaEvent::pythiaEvent(double pthat, unsigned int tune, double rapMin, double 
   if(vinciaShower_)
     pythia.readString("PartonShowers:Model = 2"); //activate the VINCIA parton shower
   else
-      pythia.readString(Form("Tune:pp = %d",tune_));
+    pythia.readString(Form("Tune:ee = %d",7));
+      //pythia.readString(Form("Tune:pp = %d",tune_));
 
-  if(flatPtHat) {
+  if(false) { // flatPtHat
     //flat pthard
     pythia.readString("PhaseSpace:bias2Selection = on");
     pythia.readString("PhaseSpace:bias2SelectionPow = 4.5");

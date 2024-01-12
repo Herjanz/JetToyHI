@@ -161,10 +161,9 @@ int getNumberOfValuesInRange(TTree *tr, TString field, double start, double end,
   return number;
 }
 
-void FF(double Q = 20, double minPt=4.5, double maxPt=45., TString str = "JetToyHIResultSimpleJetAnalysis.root")
+void FF(bool HEP = true, bool isQuark = false, TString str = "JetToyHIResultSimpleJetAnalysis.root", double Q = 20, double minPt=4.5, double maxPt=45.)
 {
-  bool HEP = false, FIT = true;
-  bool isQuark = false;
+  bool FIT = !HEP; // remove ! (and keep HEP parameter true) to draw FIT vs ALEPH data
 
   TTree *tr = getTree(str);
   //int nEvt = tr->GetEntriesFast();
@@ -183,16 +182,14 @@ void FF(double Q = 20, double minPt=4.5, double maxPt=45., TString str = "JetToy
   int nQuarkJets = getNumberOfValuesInRange(tr, "jetsWithQuarkParentsPt", minPt, maxPt, quark_conditions);
   int nGluonJets = getNumberOfValuesInRange(tr, "jetsWithGluonParentsPt", minPt, maxPt, gluon_conditions);
   
-  const Int_t nBins = 8;
-  const Double_t binEdges[nBins+1] = {0, 0.05, 0.1, 0.15, 0.25, 0.35, 0.55, 0.8, 1.0};
+  const Int_t nBins = 7;
+  const Double_t binEdges[nBins+1] = {0, 0.05, 0.1, 0.15, 0.25, 0.35, 0.55, 0.8};
 
   // quark
   tr->Draw("jetsWithQuarkParentsConstPt/jetsWithQuarkParentsPt>>quark(16, 0., 0.8)", quark_conditions);
   TH1F *simDiv = (TH1F*)gDirectory->Get("quark");
   if(HEP)
     simDiv->SetBins(nBins, binEdges);
-  simDiv->SetLineColor(1);
-  simDiv->SetLineWidth(3);
   //simDiv->SetTitle((TString) ("FF for " + to_string(int(minPt)) + " < jetPt < " + to_string(int(maxPt))));
   simDiv->Scale(1./nQuarkJets, "width");
   //simDiv->Sumw2(); already created due to Scale()
@@ -202,23 +199,23 @@ void FF(double Q = 20, double minPt=4.5, double maxPt=45., TString str = "JetToy
   TH1F *simDiv2 = (TH1F*)gDirectory->Get("gluon");
   if(HEP)
     simDiv2->SetBins(nBins, binEdges);
-  simDiv2->SetLineColor(2);
-  simDiv2->SetLineWidth(3);
   simDiv2->Scale(1./nGluonJets, "width");
 
   if(!isQuark)
     simDiv = simDiv2;
 
-  TH1F *hepDiv, *hepDiv2;
+  simDiv->SetLineColor(1);
+  simDiv->SetLineWidth(3);
+  // END Pythia
+
+
   // HEP
+  TH1F *hepDiv, *hepDiv2;
   // File from research paper to compare with
   TFile f("HEPData-ins467225.root");
   const Int_t nBinsHEP = 7;
 
   hepDiv = (TH1F*)f.Get("Table 6/Hist1D_y1");
-  hepDiv->SetLineColor(1);
-  hepDiv->SetLineWidth(3);
-  hepDiv->SetLineStyle(7);
   TH1F *hepDiv_e1_stat = (TH1F*)f.Get("Table 6/Hist1D_y1_e1");
   TH1F *hepDiv_e2_stat = (TH1F*)f.Get("Table 6/Hist1D_y1_e2");
   for(int i = 1; i <= nBinsHEP; i++)
@@ -228,9 +225,6 @@ void FF(double Q = 20, double minPt=4.5, double maxPt=45., TString str = "JetToy
   //hepDiv->SetError(hepDiv_e_stat->GetEntries());
 
   hepDiv2 = (TH1F*)f.Get("Table 6/Hist1D_y2");
-  hepDiv2->SetLineColor(2);
-  hepDiv2->SetLineWidth(3);
-  hepDiv2->SetLineStyle(7);
   TH1F *hepDiv2_e1_stat = (TH1F*)f.Get("Table 6/Hist1D_y2_e1");
   TH1F *hepDiv2_e2_stat = (TH1F*)f.Get("Table 6/Hist1D_y2_e2");
   for(int i = 1; i <= nBinsHEP; i++)
@@ -240,7 +234,12 @@ void FF(double Q = 20, double minPt=4.5, double maxPt=45., TString str = "JetToy
 
   if(!isQuark)
     hepDiv = hepDiv2;
+
+  hepDiv->SetLineColor(2);
+  hepDiv->SetLineWidth(3);
+  hepDiv->SetLineStyle(7);
   // END HEP
+
 
   // FIT
   string hadron = "pi";
@@ -250,17 +249,15 @@ void FF(double Q = 20, double minPt=4.5, double maxPt=45., TString str = "JetToy
   //TH1F *q = new TH1F();//tf_q->DoCreateHistogram(0, 1);
   //q->GetListOfFunctions()->Add(tf_q);
   //q->SetBins(nBins, binEdges);
-  fitDiv->SetLineColor(1);
-  fitDiv->SetLineWidth(3);
-  fitDiv->SetLineStyle(2);
 
   TF1 *fitDiv2 = loadKKP(hadron, !QUARK, Q);
-  fitDiv2->SetLineColor(2);
-  fitDiv2->SetLineWidth(3);
-  fitDiv2->SetLineStyle(2);
 
   if(!isQuark)
     fitDiv = fitDiv2;
+
+  fitDiv->SetLineColor(3);
+  fitDiv->SetLineWidth(3);
+  fitDiv->SetLineStyle(2);
   // END FIT
 
   // scale pythia data with HEP data
@@ -278,35 +275,47 @@ void FF(double Q = 20, double minPt=4.5, double maxPt=45., TString str = "JetToy
   // }
   // end of scaling
 
-  simDiv->GetXaxis()->SetTitle("ConstituentPt/JetPt");
-  simDiv->GetYaxis()->SetTitle("1/Njets dN/dz");
-  simDiv->GetXaxis()->SetRangeUser(0, 1);
-  simDiv->GetYaxis()->SetRangeUser(0.01, 600);
+  if(HEP && FIT)
+    simDiv = hepDiv;
+
+  simDiv->GetXaxis()->SetTitle("p_{T,Constituent}/p_{T,Jet}");
+  simDiv->GetYaxis()->SetTitle("#frac{1}{N_{jets}} #frac{dN}{dz}");
+  simDiv->GetXaxis()->SetRangeUser(0, 0.8);
+  simDiv->GetYaxis()->SetRangeUser(0.01, 1000);
   simDiv->GetXaxis()->SetLabelSize(0.05);
   simDiv->GetYaxis()->SetLabelSize(0.05);
   simDiv->GetXaxis()->SetTitleSize(0.05);
   simDiv->GetYaxis()->SetTitleSize(0.05);
-  simDiv->GetYaxis()->SetTitleOffset(0.9);
+  simDiv->GetXaxis()->SetTitleOffset(1.1);
+  simDiv->GetYaxis()->SetTitleOffset(1.1);
   simDiv->SetTitle("");
   simDiv->SetStats(false);
   gPad->SetLogy();
 
+  C->SetLeftMargin(0.13);
+  C->SetBottomMargin(0.13);
+  C->SetRightMargin(0.05);
+  C->SetTopMargin(0.05);
 
 
-  TLegend *legend = new TLegend(0.65, 0.6, 0.9, 0.9);
+
+  TLegend *legend = new TLegend(0.4, 0.8, 0.95, 0.95);
   gStyle->SetLegendTextSize(0.05);
   gStyle->SetLegendBorderSize(2);
   
-  string type = "quarks";
+  string type = "quark-initiated jets";
   if(!isQuark)
-    type = "gluons";
+    type = "gluon-initiated jets";
 
-  TH1 *h1 = simDiv->DrawCopy("");
-  legend->AddEntry(h1,(TString) ("SIM " + type));
+  if(!(HEP && FIT))
+  {
+    TH1 *h1 = simDiv->DrawCopy("");
+    legend->AddEntry(h1,(TString) ("PYTHIA " + type));
+  }
 
   if(HEP){
-    TH1 *h2 = hepDiv->DrawCopy("same");
-    legend->AddEntry(h2,(TString) ("HEP " + type));
+    TH1 *h2 = hepDiv->DrawCopy(((HEP && FIT) ? "" : "same"));
+    legend->AddEntry(h2,(TString) ("ALEPH " + type));
   }
   if(FIT)
   {
@@ -321,7 +330,59 @@ void FF(double Q = 20, double minPt=4.5, double maxPt=45., TString str = "JetToy
   if(FIT)
     pl += "_FIT";
   string title = type + pl + "_Q=" + to_string(int(Q)) + "_minPt=" + to_string(int(minPt));
-  C->SaveAs((TString) ("img/" + title + ".jpg"));
+  C->SaveAs((TString) ("img/ff/Durham_" + title + ".jpg"));
+  //C->SaveAs((TString) ("img/ff/Antikt_R=0,4_" + title + ".jpg"));
+}
+
+
+void pt_jets(bool quark = true, TString str = "JetToyHIResultSimpleJetAnalysis.root")
+{
+  TTree *tr = getTree(str);
+
+  int nEvt = tr->GetEntriesFast();
+
+  auto C = new TCanvas();
+
+  string type = "Quark";
+  if(!quark)
+    type = "Gluon";
+
+  // partons
+  tr->Draw((TString) ("jetsWith" + type + "ParentsPt>>pts"));
+  TH1F *hDiv = (TH1F*)gDirectory->Get("pts");
+  //hDiv->SetMarkerStyle(kFullCircle);
+  //hDiv->SetMarkerColor(1);
+  hDiv->SetLineWidth(3);
+
+  hDiv->GetYaxis()->SetTitle("N_{jets}");
+  hDiv->GetXaxis()->SetTitle("p_{T} GeV");
+  
+  hDiv->GetXaxis()->SetLimits(0., 50.);
+  hDiv->GetYaxis()->SetRangeUser(0, (quark ? 400 : 80));
+  hDiv->GetXaxis()->SetLabelSize(0.05);
+  hDiv->GetYaxis()->SetLabelSize(0.05);
+  hDiv->GetXaxis()->SetTitleSize(0.05);
+  hDiv->GetYaxis()->SetTitleSize(0.05);
+  hDiv->GetXaxis()->SetTitleOffset(1.1);
+  hDiv->GetYaxis()->SetTitleOffset(1);
+  hDiv->SetTitle("");
+  hDiv->SetStats(false);
+
+  C->SetLeftMargin(0.11);
+  C->SetBottomMargin(0.13);
+  C->SetRightMargin(0.05);
+  C->SetTopMargin(0.05);
+
+  // const Int_t nBins = 100;
+  // double binEdges[nBins+1];
+  // for(int i = 0; i <= nBins; i++)
+  //   binEdges[i] = i;
+  // hDiv->SetBins(nBins, binEdges);
+
+  TH1 *h1 = hDiv->DrawCopy();
+
+  string title = type + "_Durham";
+  C->SaveAs((TString) ("img/jetpts/" + title + ".jpg"));
 }
 
 
