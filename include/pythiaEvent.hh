@@ -13,8 +13,6 @@
 
 #include "extraInfo.hh"
 
-//using namespace std;
-
 //---------------------------------------------------------------
 // Description
 // This class generates a pythia8 event
@@ -100,8 +98,6 @@ std::vector<fastjet::PseudoJet> pythiaEvent::createPythiaEvent() {
     
   std::vector<fastjet::PseudoJet> particles;
   partons.clear(); //empty list before storing partons of new event
-
-  //int iprint = 0;
   
   for (int i = 0; i < pythia.event.size(); ++i) {
     if (pythia.event[i].isFinal()) { //all final state particles
@@ -125,7 +121,6 @@ std::vector<fastjet::PseudoJet> pythiaEvent::createPythiaEvent() {
       if(vinciaShower_) { //in vincia need to pass the recoil type of particles
         int st1 = pythia.event[d1].status();
         int st2 = pythia.event[d2].status();
-        //std::cout << "d1: " << d1 << " st1: " << st1 << " d2: " << d2 << " st2: " << st2 << std::endl;
         
         while(abs(st1)<51 && abs(st2)<51) {
           if(st1==-44) { //44 : outgoing shifted by a branching
@@ -145,18 +140,12 @@ std::vector<fastjet::PseudoJet> pythiaEvent::createPythiaEvent() {
               d1 = pythia.event[d2].daughter1();
               d2 = pythia.event[d2].daughter2();
             }
-            //iprint = 1;
-            //std::cout << "mom: " << i << " d1: " << d1 << " st1: " << pythia.event[d1].status() << " d2: " << d2 << " st2: " << pythia.event[d2].status() << std::endl;
           }
           st1 = pythia.event[d1].status();
           st2 = pythia.event[d2].status();
-
-          //std::cout << "d1: " << d1 << " st1: " << st1 << " d2: " << d2 << " st2: " << st2 << std::endl;
         }
       }
 
-      //std::cout << "mom: " << i << " d1: " << d1 << " d2: " << d2 << std::endl; 
-      
       fastjet::PseudoJet pd1(pythia.event[d1].px(),pythia.event[d1].py(),pythia.event[d1].pz(),pythia.event[d1].e());
       pd1.set_user_info(new extraInfo(pythia.event[d1].id(), -2)); 
       partons.push_back(pd1);
@@ -168,7 +157,7 @@ std::vector<fastjet::PseudoJet> pythiaEvent::createPythiaEvent() {
     }
 
     if(i == 0)
-    {
+    { // only works when you simulate 1 event
       // current date/time based on current system
       time_t now = time(0);
       // convert now to string form
@@ -182,9 +171,6 @@ std::vector<fastjet::PseudoJet> pythiaEvent::createPythiaEvent() {
       fclose(fp);
     }
   }
-
-  //if(iprint==1) pythia.event.list();
-  //pythia.event.list();
 
 
   return particles;

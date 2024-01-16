@@ -330,7 +330,6 @@ void FF(bool HEP = true, bool isQuark = false, TString str = "JetToyHIResultSimp
   if(FIT)
     pl += "_FIT";
   string title = type + pl + "_Q=" + to_string(int(Q)) + "_minPt=" + to_string(int(minPt));
-  //C->SaveAs((TString) ("img/ff/Durham_" + title + ".jpg"));
   C->SaveAs((TString) ("img/ff/" + (string)(str.Data()) + "_" + title + ".jpg"));
 }
 
@@ -357,7 +356,7 @@ void pt_jets(bool quark = true, TString str = "JetToyHIResultSimpleJetAnalysis.r
   hDiv->GetYaxis()->SetTitle("N_{jets}");
   hDiv->GetXaxis()->SetTitle("p_{T} GeV");
   
-  hDiv->GetXaxis()->SetLimits(0., 50.);
+  hDiv->GetXaxis()->SetRangeUser(0., 50.);
   hDiv->GetYaxis()->SetRangeUser(0, (quark ? 400 : 80));
   hDiv->GetXaxis()->SetLabelSize(0.05);
   hDiv->GetYaxis()->SetLabelSize(0.05);
@@ -381,12 +380,12 @@ void pt_jets(bool quark = true, TString str = "JetToyHIResultSimpleJetAnalysis.r
 
   TH1 *h1 = hDiv->DrawCopy();
 
-  string title = "ALEPHvsFIT";//type + "_" + (string)(str.Data());
+  string title = type + "_" + (string)(str.Data());
   C->SaveAs((TString) ("img/jetpts/" + title + ".jpg"));
 }
 
 void plot_all()
-{
+{ // makes use of the root files generated for each algorithm, name your files as below to execute this
   std::string roots[5] = {"dot4R.root", "dot8R.root", "1dot2R.root","1dot6R.root", "Durham.root"};
   for(string r : roots)
   {
