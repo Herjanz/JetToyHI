@@ -171,10 +171,10 @@ void FF(bool HEP = true, bool isQuark = false, TString str = "JetToyHIResultSimp
   auto C = new TCanvas();
 
 
-  string conditions = "jetsWithQuarkParentsPt > " + to_string(minPt) + " && jetsWithQuarkParentsPt < " + to_string(maxPt);
+  string conditions = "jetsWithQuarkParentsPt > " + to_string(minPt);// + " && jetsWithQuarkParentsPt < " + to_string(maxPt);
   conditions += " && abs(jetsWithQuarkParentsEta) <= 1.15";
   TString quark_conditions = (TString) conditions;
-  conditions = "jetsWithGluonParentsPt > " + to_string(minPt) + " && jetsWithGluonParentsPt < " + to_string(maxPt);
+  conditions = "jetsWithGluonParentsPt > " + to_string(minPt);// + " && jetsWithGluonParentsPt < " + to_string(maxPt);
   conditions += " && abs(jetsWithGluonParentsEta) <= 1.15";
   TString gluon_conditions = (TString) conditions;
 
